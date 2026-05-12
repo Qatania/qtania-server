@@ -11,6 +11,7 @@ Backend for **Catania United**, a multiplayer browser-based adaptation of the Se
 - [Native Executable](#native-executable)
 - [WebSocket API](#websocket-api)
   - [Common Schemas](#common-schemas)
+  - [GameBoard Schema](#gameboard-schema)
   - [MessageType Reference](#messagetype-reference)
   - [Lifecycle Events](#lifecycle-events)
   - [Client → Server Messages](#client--server-messages)
@@ -225,6 +226,166 @@ Used as keys in resource maps.
 | `CLAY` | Brick / clay |
 | `ORE` | Ore |
 | `WASTE` | Desert (no resource, never appears in resource maps) |
+
+---
+
+### GameBoard Schema
+
+The `gameboard` object is embedded in the `message` field of responses for `GAME_STARTED`, `PLACE_SETTLEMENT`, `UPGRADE_SETTLEMENT`, `PLACE_ROAD`, `NEXT_TURN`, and `GAME_WON`.
+
+```json
+{
+  "gameboard": {
+    "tiles": [ ],
+    "settlementPositions": [ ],
+    "roads": [ ],
+    "ports": [ ],
+    "ringsOfBoard": 3,
+    "sizeOfHex": 6
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `tiles` | `Tile[]` | All hexagonal resource tiles on the board |
+| `settlementPositions` | `SettlementPosition[]` | All vertex positions where settlements/cities can be placed |
+| `roads` | `Road[]` | All edge positions where roads can be placed |
+| `ports` | `Port[]` | All trading ports on the board |
+| `ringsOfBoard` | `integer` | Number of rings/layers of tiles (3 for 2–4 players, 4 for 5–6, etc.) |
+| `sizeOfHex` | `integer` | Hex size parameter used for graphical layout (always `6`) |
+
+---
+
+#### Tile
+
+```json
+{
+  "id": 1,
+  "type": "WHEAT",
+  "value": 6,
+  "coordinates": [12.5, -7.2]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `integer` | Unique tile identifier |
+| `type` | `TileType` | Resource type produced by this tile |
+| `value` | `integer` | Dice roll number that activates this tile (`0` for `WASTE`) |
+| `coordinates` | `[number, number]` | `[x, y]` center position for rendering |
+
+---
+
+#### SettlementPosition
+
+```json
+{
+  "id": 1,
+  "building": null,
+  "coordinates": [0.0, 8.66]
+}
+```
+
+When a settlement or city is present, `building` is populated:
+
+```json
+{
+  "id": 7,
+  "building": {
+    "owner": "player-uuid",
+    "color": "#A3C4BC",
+    "type": "Settlement"
+  },
+  "coordinates": [10.0, 8.66]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `integer` | Unique position identifier (used in `settlementPositionId` requests) |
+| `building` | `Building \| null` | Building at this position, or `null` if empty |
+| `coordinates` | `[number, number]` | `[x, y]` position for rendering |
+
+**Building object:**
+
+| Field | Type | Description |
+|---|---|---|
+| `owner` | `string` | UUID of the player who owns the building |
+| `color` | `string` | Hex color of the building |
+| `type` | `"Settlement" \| "City"` | Building type |
+
+---
+
+#### Road
+
+```json
+{
+  "id": 1,
+  "owner": null,
+  "color": null,
+  "coordinates": [5.0, 4.33],
+  "rotationAngle": 1.047
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `integer` | Unique road identifier (used in `roadId` requests) |
+| `owner` | `string \| null` | UUID of the owning player, or `null` if unbuilt |
+| `color` | `string \| null` | Hex color of the road, or `null` if unbuilt |
+| `coordinates` | `[number, number]` | `[x, y]` midpoint position for rendering |
+| `rotationAngle` | `number` | Rotation in radians for correct orientation |
+
+---
+
+#### Port
+
+All ports share the following base structure. The `portType` field distinguishes the two variants.
+
+**GeneralPort** (3:1 trade ratio – any resource):
+
+```json
+{
+  "inputResourceAmount": 3,
+  "portType": "GeneralPort",
+  "portVisuals": {
+    "portTransform": { "x": 15.0, "y": -20.0, "rotation": 0.52 },
+    "settlementPosition1Id": 4,
+    "settlementPosition2Id": 5,
+    "buildingSite1Position": [10.0, -17.3],
+    "buildingSite2Position": [20.0, -17.3]
+  }
+}
+```
+
+**SpecificResourcePort** (2:1 trade ratio – one resource type):
+
+```json
+{
+  "inputResourceAmount": 2,
+  "portType": "SpecificResourcePort",
+  "resource": "WHEAT",
+  "portVisuals": {
+    "portTransform": { "x": 15.0, "y": -20.0, "rotation": 0.52 },
+    "settlementPosition1Id": 8,
+    "settlementPosition2Id": 9,
+    "buildingSite1Position": [10.0, -17.3],
+    "buildingSite2Position": [20.0, -17.3]
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `inputResourceAmount` | `integer` | Resources required per 1 received (`2` or `3`) |
+| `portType` | `"GeneralPort" \| "SpecificResourcePort"` | Port variant |
+| `resource` | `TileType` | *(SpecificResourcePort only)* The resource this port accepts |
+| `portVisuals.portTransform` | `Transform` | `{ x, y, rotation }` position of the port structure |
+| `portVisuals.settlementPosition1Id` | `integer` | ID of the first associated settlement vertex |
+| `portVisuals.settlementPosition2Id` | `integer` | ID of the second associated settlement vertex |
+| `portVisuals.buildingSite1Position` | `[number, number]` | `[x, y]` of the first vertex |
+| `portVisuals.buildingSite2Position` | `[number, number]` | `[x, y]` of the second vertex |
 
 ---
 
@@ -580,7 +741,7 @@ Start the game. Only the host player may send this.
 
 | Field | Type | Description |
 |---|---|---|
-| `message.gameboard` | `object` | Full game board JSON representation |
+| `message.gameboard` | `GameBoard` | Full game board state (see [GameBoard Schema](#gameboard-schema)) |
 
 ---
 
@@ -822,7 +983,7 @@ End the current player's turn and advance to the next.
 
 | Field | Type | Description |
 |---|---|---|
-| `message.gameboard` | `object` | Updated game board state |
+| `message.gameboard` | `GameBoard` | Updated game board state (see [GameBoard Schema](#gameboard-schema)) |
 
 ---
 
