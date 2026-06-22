@@ -9,6 +9,7 @@ import com.example.cataniaunited.game.board.Road;
 import com.example.cataniaunited.game.board.ports.Port;
 import com.example.cataniaunited.game.board.tile_list_builder.TileType;
 import com.example.cataniaunited.game.buildings.Settlement;
+import com.example.cataniaunited.game.robber.Robber;
 import com.example.cataniaunited.lobby.Lobby;
 import com.example.cataniaunited.lobby.LobbyService;
 import com.example.cataniaunited.player.Player;
@@ -67,6 +68,11 @@ public class GameService {
         GameBoard gameboard = new GameBoard(lobby.getPlayers().size());
         addGameboardToList(lobby.getLobbyId(), gameboard);
         return gameboard;
+    }
+
+    public void placeRobber(String lobbyId, double[] coordinates) throws GameException {
+        Lobby lobby = lobbyService.getLobbyById(lobbyId);
+        Robber robber = lobbyToGameboardMap.get(lobbyId).getRobber();
     }
 
     /**

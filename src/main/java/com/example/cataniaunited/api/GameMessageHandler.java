@@ -141,6 +141,7 @@ public class GameMessageHandler {
                 case CHEAT_ATTEMPT -> handleCheatAttempt(message);
                 case REPORT_PLAYER -> handleReportPlayer(message);
                 case END_TURN -> endTurn(message);
+                case PLACE_ROBBER -> placeRobber(message);
                 default -> throw new GameException("Invalid client command");
             };
         } catch (GameException ge) {
@@ -281,6 +282,10 @@ public class GameMessageHandler {
         return sourcePlayer.getConnection().sendText(tradeRequestNotification).chain(() -> Uni.createFrom().nullItem());
     }
 
+    Uni<MessageDTO> placeRobber(MessageDTO message) throws GameException{
+        //gameService.placeRobber(message.getLobbyId(),);
+        return null;
+    }
     Uni<MessageDTO> endTurn(MessageDTO message) throws GameException {
         Lobby lobby = lobbyService.getLobbyById(message.getLobbyId());
         gameService.checkRequiredPlayerStructures(message.getLobbyId(), message.getPlayer(), lobby.getRoundsPlayed());

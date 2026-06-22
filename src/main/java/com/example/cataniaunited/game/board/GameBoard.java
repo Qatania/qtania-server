@@ -16,6 +16,7 @@ import com.example.cataniaunited.game.buildings.Building;
 import com.example.cataniaunited.game.buildings.City;
 import com.example.cataniaunited.game.buildings.Settlement;
 import com.example.cataniaunited.game.dice.DiceRoller;
+import com.example.cataniaunited.game.robber.Robber;
 import com.example.cataniaunited.player.Player;
 import com.example.cataniaunited.player.PlayerColor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,6 +39,7 @@ public class GameBoard {
     private String longestRoadPlayerId = null;
     private int longestRoadLength = 0;
 
+    private Robber robber;
     final int sizeOfBoard; // Number of rings/layers of tiles from the center
     private final DiceRoller diceRoller;
     private final Map<String, Map<Placable, Class<? extends Buildable>>> playerStructures = new HashMap<>();
@@ -96,6 +98,10 @@ public class GameBoard {
         };
     }
 
+    public Robber getRobber() {
+        return robber;
+    }
+
     /**
      * Generates the list of tiles for the game board using a {@link TileListDirector} and a {@link StandardTileListBuilder}.
      */
@@ -103,8 +109,18 @@ public class GameBoard {
         TileListBuilder tileBuilder = new StandardTileListBuilder();
         TileListDirector director = new TileListDirector(tileBuilder);
         tileList = director.constructStandardTileList(sizeOfBoard, SIZE_OF_HEX, true);
+        robber = new Robber();
+        robber.diceRoller=diceRoller;
+        robber.rob_Tile(findWaste());
     }
-
+    Tile findWaste(){
+        for(Tile tile : tileList){
+            if(tile.getType().equals(TileType.WASTE)){
+                return tile;
+            }
+        }
+        return null;
+    }
     /**
      * Generates the graph structure of building sites and roads for the game board.
      * This method relies on the tile list having been generated first.
