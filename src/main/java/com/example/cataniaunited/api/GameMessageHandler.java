@@ -282,9 +282,35 @@ public class GameMessageHandler {
         return sourcePlayer.getConnection().sendText(tradeRequestNotification).chain(() -> Uni.createFrom().nullItem());
     }
 
-    Uni<MessageDTO> placeRobber(MessageDTO message) throws GameException{
-        //gameService.placeRobber(message.getLobbyId(),);
-        return null;
+    Uni<MessageDTO> placeRobber(MessageDTO message) throws GameException {
+
+
+        JsonNode tileIdNode = message.getMessageNode("tileId");
+        if (tileIdNode.isMissingNode()) {
+            throw new GameException("Missing required 'tileId' field for placing the robber.");
+        }
+
+        int targetTileId;
+        try {
+            targetTileId = Integer.parseInt(tileIdNode.toString());
+        } catch (NumberFormatException e) {
+            throw new GameException("Invalid tile ID format provided: %s", tileIdNode.toString());
+        }
+
+        gameService.placeRobber(message.getLobbyId(), targetTileId);
+        ObjectNode updatedBoardJson = getGameBoardInformation(message.getLobbyId());
+
+        MessageDTO updateResponse = new MessageDTO(
+                MessageType.PLACE_ROBBER,
+                message.getPlayer(),
+                message.getLobbyId(),
+                getLobbyPlayerInformation(message.getLobbyId()),
+                updatedBoardJson
+        );
+
+        // Broadcast layout mutations to all connected websocket sessions in the room
+        return lobbyService.notifyPlayers(message.getLobbyId(), updateResponse, message.getPlayer())
+                .chain(() -> Uni.createFrom().item(updateResponse));
     }
     Uni<MessageDTO> endTurn(MessageDTO message) throws GameException {
         Lobby lobby = lobbyService.getLobbyById(message.getLobbyId());

@@ -177,6 +177,13 @@ public class Player {
     public Map<TileType, Integer> getResources() {
         return resources;
     }
+    public void halfResources(){
+        int ressourceLoss =(int)Math.floor((resources.size()/2));
+        Random rand = new Random();
+        for (int i = 0; i <= ressourceLoss; i++) {
+            resources.remove(rand.nextInt(resources.size()-1));
+        }
+    }
 
     /**
      * Compares this Player object to another object for equality.

@@ -70,9 +70,27 @@ public class GameService {
         return gameboard;
     }
 
-    public void placeRobber(String lobbyId, double[] coordinates) throws GameException {
-        Lobby lobby = lobbyService.getLobbyById(lobbyId);
-        Robber robber = lobbyToGameboardMap.get(lobbyId).getRobber();
+    public void placeRobber(String lobbyId, int targetTileId) throws GameException {
+        GameBoard gameboard = getGameboardByLobbyId(lobbyId);
+
+
+        Robber robber = gameboard.getRobber();
+        if (robber == null) {
+            throw new GameException("Robber tracking instance not initialized on the board.");
+        }
+
+
+        com.example.cataniaunited.game.board.tile_list_builder.Tile targetTile = gameboard.getTileList().stream()
+                .filter(tile -> tile.getValue() == targetTileId)
+                .findFirst()
+                .orElseThrow(() -> new GameException("Target tile ID %d not found on the board.", targetTileId));
+
+
+        robber.rob_Tile(targetTile);
+        robber.rob_Player(playerService);
+        //TODO: Find out if player can steal from someone.
+
+        logger.infof("Robber successfully moved to tile ID %d in lobby %s", targetTileId, lobbyId);
     }
 
     /**

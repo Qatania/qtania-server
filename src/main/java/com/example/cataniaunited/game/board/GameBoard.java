@@ -360,6 +360,7 @@ public class GameBoard {
 
         boardNode.put("ringsOfBoard", this.sizeOfBoard);
         boardNode.put("sizeOfHex", DEFAULT_TILES_PER_PLAYER_GOAL);
+        boardNode.put("robber",robber.toJson());
 
         return boardNode;
     }
