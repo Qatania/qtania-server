@@ -7,6 +7,7 @@ import com.example.cataniaunited.lobby.Lobby;
 import com.example.cataniaunited.lobby.LobbyService;
 import com.example.cataniaunited.player.Player;
 import com.example.cataniaunited.player.PlayerService;
+import io.quarkus.arc.Unremovable;
 import io.quarkus.logging.Log;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;

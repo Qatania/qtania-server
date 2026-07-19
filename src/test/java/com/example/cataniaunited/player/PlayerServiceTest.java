@@ -18,7 +18,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -175,28 +174,6 @@ class PlayerServiceTest {
     }
 
     @Test
-    void addVictoryPointsIncreasesPointsCorrectly() {
-        Player player = playerService.addPlayer(mockConnection1);
-        playerService.addVictoryPoints(player.getUniqueId(), 2);
-        playerService.addVictoryPoints(player.getUniqueId(), 3);
-        assertEquals(5, player.getVictoryPoints());
-    }
-
-    @Test
-    void checkForWinReturnsFalseIfLessThanTenPoints() {
-        Player player = playerService.addPlayer(mockConnection1);
-        playerService.addVictoryPoints(player.getUniqueId(), 9);
-        assertFalse(playerService.checkForWin(player.getUniqueId()));
-    }
-
-    @Test
-    void checkForWinReturnsTrueIfTenPoints() {
-        Player player = playerService.addPlayer(mockConnection1);
-        playerService.addVictoryPoints(player.getUniqueId(), 10);
-        assertTrue(playerService.checkForWin(player.getUniqueId()));
-    }
-
-    @Test
     void getAllPlayersReturnsListOfAllPlayers() {
         playerService.addPlayer(mockConnection1);
         List<Player> players = playerService.getAllPlayers();
@@ -253,18 +230,6 @@ class PlayerServiceTest {
     }
 
     @Test
-    void addVictoryPointsForNonExistentPlayerDoesNotThrowErrorAndDoesNotChangeState() {
-        String nonExistentPlayerId = "non-existent-player-id-123";
-        int initialPlayerCount = playerService.getAllPlayers().size();
-
-        assertDoesNotThrow(() -> playerService.addVictoryPoints(nonExistentPlayerId, 5),
-                "Adding victory points to a non-existent player should not throw an exception.");
-
-        assertEquals(initialPlayerCount, playerService.getAllPlayers().size(),
-                "Player count should remain unchanged after attempting to add VP to non-existent player.");
-    }
-
-    @Test
     void sendMessageToPlayerShouldNotThrowExceptionIfSendTextFails() {
         WebSocketConnection mockConnection = mock(WebSocketConnection.class);
         RuntimeException simulatedException = new RuntimeException("Simulated network error during send");
@@ -310,23 +275,6 @@ class PlayerServiceTest {
         playerService.sendMessageToPlayer(null, testMessage);
 
         verify(mockConnection, never()).sendText(testMessage);
-    }
-
-    @Test
-    void resetVictoryPointsShouldNotFailOnNonExistingPlayer() {
-        assertDoesNotThrow(() -> playerService.resetVictoryPoints("non-existent-player-id-123"));
-    }
-
-    @Test
-    void resetVictoryPointsShouldSetVictoryPointsOfPlayerToZero() {
-        Player player = playerService.addPlayer(mockConnection1);
-        int currentVictoryPoints = player.getVictoryPoints();
-        player.addVictoryPoints(5);
-        assertEquals(currentVictoryPoints + 5, player.getVictoryPoints());
-
-        playerService.resetVictoryPoints(player.getUniqueId());
-
-        assertEquals(0, player.getVictoryPoints());
     }
 
     @Test

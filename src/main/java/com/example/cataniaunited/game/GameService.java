@@ -95,7 +95,7 @@ public class GameService {
         } else {
             logger.debug("No Port found at settlementPositionId=%s".formatted(settlementPositionId));
         }
-        playerService.addVictoryPoints(playerId, 1);
+        lobbyService.addVictoryPoints(lobbyId, playerId, 1);
     }
 
     /**
@@ -115,7 +115,7 @@ public class GameService {
         }
         GameBoard gameboard = getGameboardByLobbyId(lobbyId);
         gameboard.placeCity(buildRequest);
-        playerService.addVictoryPoints(playerId, 1); // Only add one additional Point
+        lobbyService.addVictoryPoints(lobbyId, playerId, 1); // Only add one additional Point
     }
 
     /**
@@ -145,11 +145,11 @@ public class GameService {
         if (newLength >= MIN_LONGEST_ROAD_LENGTH && newLength > gameboard.getLongestRoadLength()) {
             String oldLongestRoadPlayerId = gameboard.getLongestRoadPlayerId();
             if (oldLongestRoadPlayerId != null && !oldLongestRoadPlayerId.equals(playerId)) {
-                playerService.addVictoryPoints(oldLongestRoadPlayerId, -2);
+                lobbyService.addVictoryPoints(lobbyId, oldLongestRoadPlayerId, -2);
             }
 
             if (!playerId.equals(oldLongestRoadPlayerId)) {
-                playerService.addVictoryPoints(playerId, 2);
+                lobbyService.addVictoryPoints(lobbyId, playerId, 2);
             }
 
             gameboard.setLongestRoad(playerId, newLength);
