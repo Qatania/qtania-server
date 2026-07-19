@@ -630,7 +630,7 @@ class GameWebSocketTest {
         lobbyService.getLobbyById(lobbyId).setActivePlayer(player1Id);
 
         doReturn(playerMock).when(playerService).getPlayerById(player1Id);
-        doReturn(true).when(playerService).checkForWin(player1Id);
+        doReturn(true).when(lobbyService).checkForWin(lobbyId, player1Id);
 
         ObjectNode msgNode = JsonNodeFactory.instance.objectNode().put("settlementPositionId", settlementId);
         MessageDTO msg = new MessageDTO(MessageType.PLACE_SETTLEMENT, player1Id, lobbyId, msgNode);
@@ -891,7 +891,7 @@ class GameWebSocketTest {
         assertEquals(mockPlayer2, actualRoad.getOwner());
 
         verify(gameService).placeRoad(lobbyId, player2, roadId);
-        verify(playerService, times(3)).getPlayerById(player2);
+        verify(playerService, times(2)).getPlayerById(player2);
         verify(gameMessageHandler).getGameBoardInformation(lobbyId);
         verify(gameService, times(2)).getGameboardByLobbyId(lobbyId);
     }
@@ -908,7 +908,7 @@ class GameWebSocketTest {
         when(mockPlayer2.getResourceCount(any(TileType.class))).thenReturn(10);
         doReturn(mockPlayer2).when(playerService).getPlayerById(player2);
 
-        doReturn(true).when(playerService).checkForWin(player2);
+        doReturn(true).when(lobbyService).checkForWin(anyString(), eq(player2));
 
         String lobbyId = lobbyService.createLobby(player1);
         lobbyService.joinLobbyByCode(lobbyId, player2);
@@ -981,7 +981,7 @@ class GameWebSocketTest {
 
         verify(gameService).placeRoad(lobbyId, player2, roadId);
         verify(playerService, times(3)).getPlayerById(player2);
-        verify(playerService).checkForWin(player2);
+        verify(lobbyService).checkForWin(lobbyId, player2);
         verify(gameMessageHandler, never()).getGameBoardInformation(lobbyId);
         verify(gameService, times(2)).getGameboardByLobbyId(lobbyId);
     }
@@ -1171,7 +1171,7 @@ class GameWebSocketTest {
         when(mockGameBoard.getJson()).thenReturn(boardStateJson);
         doReturn(mockGameBoard).when(gameService).getGameboardByLobbyId(actualLobbyId);
         doNothing().when(gameService).placeSettlement(actualLobbyId, playerId, settlementPositionId);
-        when(playerService.checkForWin(playerId)).thenReturn(false);
+        when(lobbyService.checkForWin(lobby.getLobbyId(), playerId)).thenReturn(false);
 
         List<String> receivedMessages = new CopyOnWriteArrayList<>();
         CountDownLatch responseLatch = new CountDownLatch(2);
@@ -1218,7 +1218,7 @@ class GameWebSocketTest {
         }
 
         verify(gameService).placeSettlement(actualLobbyId, playerId, settlementPositionId);
-        verify(playerService, atLeastOnce()).checkForWin(playerId);
+        verify(lobbyService, atLeastOnce()).checkForWin(actualLobbyId, playerId);
         verify(gameService, times(1)).getGameboardByLobbyId(actualLobbyId);
     }
 
@@ -1503,19 +1503,19 @@ class GameWebSocketTest {
         lobby.setActivePlayer(winnerPlayerId);
 
         doNothing().when(gameService).placeSettlement(actualLobbyId, winnerPlayerId, settlementPositionId);
-        when(playerService.checkForWin(winnerPlayerId)).thenReturn(true);
+        when(lobbyService.checkForWin(actualLobbyId, winnerPlayerId)).thenReturn(true);
 
         Player mockPlayer = mock(Player.class);
         when(mockPlayer.getUsername()).thenReturn(winnerPlayerId);
         when(mockPlayer.getUniqueId()).thenReturn(winnerPlayerId);
-        when(mockPlayer.getVictoryPoints()).thenReturn(10);
         when(playerService.getPlayerById(winnerPlayerId)).thenReturn(mockPlayer); // <-- Ensure this is how it's resolved
+        lobby.addVictoryPoints(winnerPlayerId, 10);
 
         Player mockPlayer2 = mock(Player.class);
         when(mockPlayer2.getUsername()).thenReturn(loserPlayerId);
         when(mockPlayer2.getUniqueId()).thenReturn(loserPlayerId);
-        when(mockPlayer2.getVictoryPoints()).thenReturn(8);
         when(playerService.getPlayerById(loserPlayerId)).thenReturn(mockPlayer2);
+        lobby.addVictoryPoints(loserPlayerId, 8);
 
         lobbyService.joinLobbyByCode(lobby.getLobbyId(), loserPlayerId);
 
@@ -1567,7 +1567,7 @@ class GameWebSocketTest {
         }
 
         verify(gameService).placeSettlement(actualLobbyId, winnerPlayerId, settlementPositionId);
-        verify(playerService, atLeastOnce()).checkForWin(winnerPlayerId);
+        verify(lobbyService, atLeastOnce()).checkForWin(actualLobbyId, winnerPlayerId);
         verify(gameMessageHandler, times(1)).broadcastWin(actualLobbyId, winnerPlayerId);
         verify(gameService, never()).getGameboardByLobbyId(anyString());
     }
@@ -1613,7 +1613,7 @@ class GameWebSocketTest {
         assertTrue(responseDto.getMessageNode("error").asText().startsWith("Invalid settlement position id: id = "));
 
         verify(gameService, never()).placeSettlement(anyString(), anyString(), anyInt());
-        verify(playerService, never()).checkForWin(anyString());
+        verify(lobbyService, never()).checkForWin(anyString(), anyString());
         verify(gameService, never()).getGameboardByLobbyId(anyString());
     }
 
@@ -1663,7 +1663,7 @@ class GameWebSocketTest {
         assertEquals(gameServiceErrorMessage, responseDto.getMessageNode("error").asText());
 
         verify(gameService).placeSettlement(actualLobbyId, playerId, settlementPositionId);
-        verify(playerService, never()).checkForWin(anyString());
+        verify(lobbyService, never()).checkForWin(anyString(), anyString());
         verify(gameService, never()).getGameboardByLobbyId(anyString());
         verify(gameMessageHandler, never()).broadcastWin(anyString(), anyString());
     }
@@ -2126,10 +2126,9 @@ class GameWebSocketTest {
 
         Player player2 = playerService.getPlayerById(player2ActualId);
         assertNotNull(player2);
-        assertEquals(0, player2.getVictoryPoints());
+        assertEquals(0, lobby.getVictoryPoints(player2ActualId));
 
         verify(lobbyService).leaveLobby(actualLobbyId, player2ActualId);
-        verify(playerService).resetVictoryPoints(player2ActualId);
     }
 
     @Test

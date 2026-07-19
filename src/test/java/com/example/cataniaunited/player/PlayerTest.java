@@ -6,6 +6,7 @@ import com.example.cataniaunited.game.board.ports.GeneralPort;
 import com.example.cataniaunited.game.board.ports.Port;
 import com.example.cataniaunited.game.board.ports.SpecificResourcePort;
 import com.example.cataniaunited.game.board.tile_list_builder.TileType;
+import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.websockets.next.WebSocketConnection;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-
+@QuarkusTest
 class PlayerTest {
 
     Player player;
@@ -219,7 +220,7 @@ class PlayerTest {
     }
 
     @Test
-    void getAccessiblePortsReturnsCorrectPortSet(){
+    void getAccessiblePortsReturnsCorrectPortSet() {
         player.addPort(new GeneralPort());
         player.addPort(new SpecificResourcePort(TileType.WOOD));
         player.addPort(new SpecificResourcePort(TileType.WHEAT));
@@ -317,17 +318,6 @@ class PlayerTest {
 
         assertNotEquals(playerA, playerB, "Players with same fields but different unique IDs should not be equal.");
         assertNotEquals(playerB, playerA, "Players with same fields but different unique IDs should not be equal.");
-    }
-
-    @Test
-    void resetVictoryPointsSetsPointsToZero() {
-        int victoryPoints = player.getVictoryPoints();
-        player.addVictoryPoints(7);
-        assertEquals(victoryPoints + 7, player.getVictoryPoints());
-
-        player.resetVictoryPoints();
-
-        assertEquals(0, player.getVictoryPoints());
     }
 }
 

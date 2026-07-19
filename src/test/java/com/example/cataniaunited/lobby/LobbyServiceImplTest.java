@@ -431,4 +431,34 @@ class LobbyServiceImplTest {
         GameException ge = assertThrows(GameException.class, () -> lobbyService.checkForWin(lobbyId, playerId));
         assertEquals("Player %s not part of lobby %s".formatted(playerId, lobbyId), ge.getMessage());
     }
+
+    @Test
+    void addVictoryPointsIncreasesPointsCorrectly() throws GameException {
+        String lobbyId = lobbyService.createLobby("HostPlayer");
+        Lobby lobby = lobbyService.getLobbyById(lobbyId);
+        Player player = new Player("Player1");
+        lobbyService.joinLobbyByCode(lobbyId, player.getUniqueId());
+        lobbyService.addVictoryPoints(lobbyId, player.getUniqueId(), 2);
+        lobbyService.addVictoryPoints(lobbyId, player.getUniqueId(), 3);
+        assertEquals(5, lobby.getVictoryPoints(player.getUniqueId()));
+    }
+
+    @Test
+    void checkForWinReturnsFalseIfLessThanTenPoints() throws GameException {
+        String lobbyId = lobbyService.createLobby("HostPlayer");
+        Lobby lobby = lobbyService.getLobbyById(lobbyId);
+        Player player = new Player("Player1");
+        lobbyService.joinLobbyByCode(lobbyId, player.getUniqueId());
+        lobbyService.addVictoryPoints(lobbyId, player.getUniqueId(), 9);
+        assertFalse(lobbyService.checkForWin(lobbyId, player.getUniqueId()));
+    }
+
+    @Test
+    void checkForWinReturnsTrueIfTenPoints() throws GameException {
+        String lobbyId = lobbyService.createLobby("HostPlayer");
+        Player player = new Player("Player1");
+        lobbyService.joinLobbyByCode(lobbyId, player.getUniqueId());
+        lobbyService.addVictoryPoints(lobbyId, player.getUniqueId(), 10);
+        assertTrue(lobbyService.checkForWin(lobbyId, player.getUniqueId()));
+    }
 }

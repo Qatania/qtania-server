@@ -143,8 +143,9 @@ class GameServiceTest {
         doReturn(PlayerColor.RED).when(lobbyService).getPlayerColor(anyString(), anyString());
         doReturn(2).when(lobbyService).getRoundsPlayed(anyString());
         doNothing().when(lobbyService).checkPlayerTurn(anyString(), anyString());
+        doNothing().when(lobbyService).addVictoryPoints(anyString(), anyString(), anyInt());
         gameService.placeRoad(lobbyId, playerId, 1);
-        verify(playerService, times(1)).addVictoryPoints(playerId, 2);
+        verify(lobbyService, times(1)).addVictoryPoints(lobbyId, playerId, 2);
         verify(gameboardMock, times(1)).setLongestRoad(playerId, 5);
     }
 
@@ -159,6 +160,7 @@ class GameServiceTest {
         doReturn(PlayerColor.RED).when(lobbyService).getPlayerColor(anyString(), anyString());
         doReturn(2).when(lobbyService).getRoundsPlayed(anyString());
         doNothing().when(lobbyService).checkPlayerTurn(anyString(), anyString());
+        doNothing().when(lobbyService).addVictoryPoints(anyString(), anyString(), anyInt());
         List<Road> realRoads = new ArrayList<>();
         List<BuildingSite> sites = new ArrayList<>();
         for (int i = 0; i < 6; i++) sites.add(new BuildingSite(i));
@@ -173,7 +175,7 @@ class GameServiceTest {
         when(gameboardMock.getRoadList()).thenReturn(realRoads);
         when(gameboardMock.getLongestRoadLength()).thenReturn(0);
         gameService.placeRoad(lobbyId, playerId, 1);
-        verify(playerService).addVictoryPoints(playerId, 2);
+        verify(lobbyService).addVictoryPoints(lobbyId, playerId, 2);
         verify(gameboardMock).setLongestRoad(playerId, 5);
     }
 
@@ -344,6 +346,7 @@ class GameServiceTest {
         Player player = mock(Player.class);
         int settlementPositionId = 15;
         String lobbyId = lobbyMock.getLobbyId();
+        doReturn(Set.of(playerId)).when(lobbyMock).getPlayers();
         doReturn(lobbyMock).when(lobbyService).getLobbyById(lobbyId);
         doReturn(true).when(lobbyMock).isPlayerTurn(playerId);
         doReturn(PlayerColor.BLUE).when(lobbyMock).getPlayerColor(playerId);
@@ -360,6 +363,7 @@ class GameServiceTest {
         int settlementPositionId = 5;
         String lobbyId = lobbyMock.getLobbyId();
 
+        doReturn(Set.of(playerId)).when(lobbyMock).getPlayers();
         doReturn(lobbyMock).when(lobbyService).getLobbyById(lobbyId);
         doReturn(true).when(lobbyMock).isPlayerTurn(playerId);
         doReturn(PlayerColor.BLUE).when(lobbyMock).getPlayerColor(playerId);
@@ -370,7 +374,7 @@ class GameServiceTest {
         gameService.placeSettlement(lobbyId, playerId, settlementPositionId);
 
         verify(gameboardMock).placeSettlement(any(BuildRequest.class));
-        verify(playerService).addVictoryPoints(playerId, 1);
+        verify(lobbyService).addVictoryPoints(lobbyId, playerId, 1);
     }
 
     @Test
@@ -394,6 +398,7 @@ class GameServiceTest {
         int settlementPositionId = 1;
         Player player = new Player("player1");
         String lobbyId = lobbyMock.getLobbyId();
+        doReturn(Set.of(player.getUniqueId())).when(lobbyMock).getPlayers();
         doReturn(lobbyMock).when(lobbyService).getLobbyById(lobbyId);
         doReturn(true).when(lobbyMock).isPlayerTurn(player.getUniqueId());
         doReturn(PlayerColor.BLUE).when(lobbyMock).getPlayerColor(player.getUniqueId());
@@ -426,6 +431,7 @@ class GameServiceTest {
         int settlementPositionId = 1;
         Player player = new Player("player1");
         String lobbyId = lobbyMock.getLobbyId();
+        doReturn(Set.of(player.getUniqueId())).when(lobbyMock).getPlayers();
         doReturn(lobbyMock).when(lobbyService).getLobbyById(lobbyId);
         doReturn(true).when(lobbyMock).isPlayerTurn(player.getUniqueId());
         doReturn(PlayerColor.BLUE).when(lobbyMock).getPlayerColor(player.getUniqueId());
@@ -456,16 +462,18 @@ class GameServiceTest {
     void placeRoadShouldDecrementVictoryPointsIfPlayerDoesNotHaveLongestRoadAnymore() throws GameException {
         Player player = new Player("player1");
         Player oldLongestRoadPlayer = new Player("oldLongestRoadPlayer");
-        oldLongestRoadPlayer.addVictoryPoints(2);
         String playerId = player.getUniqueId();
         int settlementPositionId = 15;
         int newLongestRoadLength = 7;
-        String lobbyId = lobbyMock.getLobbyId();
         LongestRoadCalculator longestRoadCalculatorMock = mock(LongestRoadCalculator.class);
 
-        doReturn(lobbyMock).when(lobbyService).getLobbyById(lobbyId);
-        doReturn(true).when(lobbyMock).isPlayerTurn(playerId);
-        doReturn(PlayerColor.BLUE).when(lobbyMock).getPlayerColor(playerId);
+        String lobbyId = lobbyService.createLobby(playerId);
+        Lobby lobby = lobbyService.getLobbyById(lobbyId);
+        lobbyService.joinLobbyByCode(lobbyId, playerId);
+        lobbyService.joinLobbyByCode(lobbyId, oldLongestRoadPlayer.getUniqueId());
+        lobby.addVictoryPoints(oldLongestRoadPlayer.getUniqueId(), 2);
+        lobby.setActivePlayer(playerId);
+
         doReturn(gameboardMock).when(gameService).getGameboardByLobbyId(lobbyId);
         doReturn(longestRoadCalculatorMock).when(gameService).getLongestRoadCalculator();
         doReturn(player).when(playerService).getPlayerById(playerId);
@@ -474,17 +482,17 @@ class GameServiceTest {
         doReturn(newLongestRoadLength - 1).when(gameboardMock).getLongestRoadLength();
         doReturn(oldLongestRoadPlayer.getUniqueId()).when(gameboardMock).getLongestRoadPlayerId();
 
-        assertEquals(0, player.getVictoryPoints());
-        assertEquals(2, oldLongestRoadPlayer.getVictoryPoints());
+        assertEquals(0, lobby.getVictoryPoints(playerId));
+        assertEquals(2, lobby.getVictoryPoints(oldLongestRoadPlayer.getUniqueId()));
 
         gameService.placeRoad(lobbyId, playerId, settlementPositionId);
 
-        assertEquals(2, player.getVictoryPoints());
-        assertEquals(0, oldLongestRoadPlayer.getVictoryPoints());
+        assertEquals(2, lobby.getVictoryPoints(playerId));
+        assertEquals(0, lobby.getVictoryPoints(oldLongestRoadPlayer.getUniqueId()));
 
         verify(gameboardMock).setLongestRoad(playerId, newLongestRoadLength);
-        verify(playerService).addVictoryPoints(oldLongestRoadPlayer.getUniqueId(), -2);
-        verify(playerService).addVictoryPoints(playerId, 2);
+        verify(lobbyService).addVictoryPoints(lobbyId, oldLongestRoadPlayer.getUniqueId(), -2);
+        verify(lobbyService).addVictoryPoints(lobbyId, playerId, 2);
     }
 
 
@@ -528,7 +536,7 @@ class GameServiceTest {
 
         when(gameboardMock.getPortOfBuildingSite(settlementPositionId)).thenReturn(mockPort);
         doNothing().when(gameboardMock).placeSettlement(any(BuildRequest.class));
-        doNothing().when(playerService).addVictoryPoints(anyString(), anyInt());
+        doNothing().when(lobbyService).addVictoryPoints(anyString(), anyString(), anyInt());
 
 
         gameService.placeSettlement(lobbyId, playerId, settlementPositionId);
@@ -536,7 +544,7 @@ class GameServiceTest {
         verify(gameboardMock).placeSettlement(any(BuildRequest.class));
         verify(gameboardMock).getPortOfBuildingSite(settlementPositionId);
         verify(mockPlayer).addPort(mockPort);
-        verify(playerService).addVictoryPoints(playerId, 1);
+        verify(lobbyService).addVictoryPoints(lobbyId, playerId, 1);
     }
 
     @Test
@@ -554,14 +562,14 @@ class GameServiceTest {
 
         when(gameboardMock.getPortOfBuildingSite(settlementPositionId)).thenReturn(null);
         doNothing().when(gameboardMock).placeSettlement(any(BuildRequest.class));
-        doNothing().when(playerService).addVictoryPoints(anyString(), anyInt());
+        doNothing().when(lobbyService).addVictoryPoints(anyString(), anyString(), anyInt());
 
         gameService.placeSettlement(lobbyId, playerId, settlementPositionId);
 
         verify(gameboardMock).placeSettlement(any(BuildRequest.class));
         verify(gameboardMock).getPortOfBuildingSite(settlementPositionId);
         verify(mockPlayer, never()).addPort(any(Port.class));
-        verify(playerService).addVictoryPoints(playerId, 1);
+        verify(lobbyService).addVictoryPoints(lobbyId, playerId, 1);
     }
 
     @Test

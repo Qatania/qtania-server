@@ -34,14 +34,15 @@ public class Lobby {
     private final List<String> playerOrder = new CopyOnWriteArrayList<>();
     private final Map<String, PlayerColor> playerColors = new ConcurrentHashMap<>(); // Maps player ID to their assigned color
     private final List<PlayerColor> availableColors = new CopyOnWriteArrayList<>(); // List of colors not yet assigned
+    private final Map<String, Integer> leaderboard = new ConcurrentHashMap<>(); //Map which stores the victory points per player
     private volatile String activePlayer; // ID of the player whose turn it is
     private volatile boolean gameStarted = false; // Flag indicating if the game has started
     private volatile boolean gameEnded = false; // Flag indicating if the game has ended
     private int roundsPlayed = 0;
     private final Map<String, Integer> latestDiceRollOfPlayer = new ConcurrentHashMap<>();
     private final Map<String, Boolean> readyState = new ConcurrentHashMap<>();
-    private Map<String, Integer> cheatCounts = new HashMap<>();
-    private Map<String, Integer> reportCounts = new HashMap<>();
+    private final Map<String, Integer> cheatCounts = new HashMap<>();
+    private final Map<String, Integer> reportCounts = new HashMap<>();
     private final List<ReportRecord> reportRecords = new ArrayList<>();
     private final Set<String> activeCheaters = new HashSet<>();
 
@@ -113,8 +114,9 @@ public class Lobby {
         readyState.remove(player);
         playerOrder.remove(player);
         players.remove(player);
+        resetVictoryPoints(player);
 
-        if(gameStarted && Objects.equals(activePlayer, player)) {
+        if (gameStarted && Objects.equals(activePlayer, player)) {
             nextPlayerTurn();
         }
     }
@@ -324,6 +326,7 @@ public class Lobby {
         this.activePlayer = null;
         this.playerOrder.clear();
         this.readyState.clear();
+        this.leaderboard.clear();
         this.roundsPlayed = 0;
     }
 
@@ -406,5 +409,16 @@ public class Lobby {
         activeCheaters.remove(playerId);
     }
 
+    public void addVictoryPoints(String playerId, int points) {
+        int currentPoints = getVictoryPoints(playerId);
+        this.leaderboard.put(playerId, currentPoints + points);
+    }
 
+    public int getVictoryPoints(String playerId) {
+        return this.leaderboard.getOrDefault(playerId, 0);
+    }
+
+    public void resetVictoryPoints(String playerId) {
+        this.leaderboard.remove(playerId);
+    }
 }

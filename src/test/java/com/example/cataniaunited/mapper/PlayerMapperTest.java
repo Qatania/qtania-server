@@ -93,6 +93,7 @@ class PlayerMapperTest {
     void testToDto() {
         Lobby lobbyMock = new Lobby("1234", playerMock.getUniqueId());
         lobbyMock.setActivePlayer(playerMock.getUniqueId());
+        lobbyMock.addVictoryPoints(playerMock.getUniqueId(), 7);
         PlayerColor expectedColor = lobbyMock.getPlayerColor(playerMock.getUniqueId());
         playerMock.receiveResource(TileType.WHEAT, 3);
         playerMock.receiveResource(TileType.SHEEP, 1);
@@ -108,6 +109,7 @@ class PlayerMapperTest {
         assertTrue(playerInfo.isActivePlayer());
         assertTrue(playerInfo.canRollDice());
         assertTrue(playerInfo.isSetupRound());
+        assertEquals(7, playerInfo.victoryPoints());
         assertEquals(3, playerInfo.resources().get(TileType.WHEAT));
         assertEquals(1, playerInfo.resources().get(TileType.SHEEP));
         assertEquals(0, playerInfo.resources().get(TileType.ORE));

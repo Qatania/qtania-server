@@ -25,8 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -139,6 +141,37 @@ public class CleanupServiceTest {
         assertEquals(2, lobbyService.getLobbyById(lobbyId).getPlayers().size());
 
         verify(lobbyService, never()).removeLobby(anyString());
+    }
+
+    @Test
+    void lobbyCleanupShouldNotFailIfOnePlayerCannotBeRemovedFromLobby() throws GameException {
+        Player player = new Player("Player1");
+        Player player2 = new Player("Player2");
+        String lobbyId = "lob001";
+        Lobby lobby = spy(new Lobby(lobbyId, player.getUniqueId()));
+        doReturn(Instant.now().minus(cleanupThresholdHours + 1, ChronoUnit.HOURS)).when(lobby).getCreatedAt();
+        doReturn(List.of(lobby)).when(lobbyService).getOpenLobbies();
+        doReturn(lobby).when(lobbyService).getLobbyById(lobbyId);
+        lobbyService.joinLobbyByCode(lobbyId, player2.getUniqueId());
+        gameService.createGameboard(lobbyId);
+
+        assertNotNull(gameService.getGameboardByLobbyId(lobbyId));
+        assertEquals(2, lobby.getPlayers().size());
+
+        doThrow(new GameException("Test Exception")).when(lobbyService).removePlayerFromLobby(lobbyId, player.getUniqueId());
+
+        cleanupService.cleanupOldLobbies();
+
+        assertThrows(GameException.class, () -> gameService.getGameboardByLobbyId(lobbyId));
+        assertEquals(1, lobby.getPlayers().size());
+
+        verify(lobbyService).getOpenLobbies();
+        verify(lobbyService).removePlayerFromLobby(lobbyId, player.getUniqueId());
+        verify(lobbyService).removePlayerFromLobby(lobbyId, player2.getUniqueId());
+        verify(gameService).removeGameBoardForLobby(lobbyId);
+        verify(lobbyService).removeLobby(lobbyId);
+        verify(tradingService).removeAllOpenTradeRequestForLobbyId(lobbyId);
+
     }
 
     @Test

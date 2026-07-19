@@ -36,6 +36,7 @@ public class LobbyServiceImpl implements LobbyService {
     private static final Logger logger = Logger.getLogger(LobbyServiceImpl.class);
     private final Map<String, Lobby> lobbies = new ConcurrentHashMap<>();
     private static final SecureRandom secureRandom = new SecureRandom();
+    public static final int WIN_THRESHOLD = 10;
 
     @Inject
     PlayerService playerService;
@@ -131,12 +132,12 @@ public class LobbyServiceImpl implements LobbyService {
     @Override
     public void leaveLobby(String lobbyId, String playerId) throws GameException {
         removePlayerFromLobby(lobbyId, playerId);
-        playerService.resetVictoryPoints(playerId);
     }
 
     /**
      * Removes the player with the given ID from all their lobbies.
      * If the player is the host of a lobby, the lobby gets closed and removed
+     *
      * @return A set of lobbies the player was part of
      */
     @Override
@@ -339,11 +340,21 @@ public class LobbyServiceImpl implements LobbyService {
             logger.errorf("Check for win failed -> Player is not in lobby: lobbyId = %s, playerId = %s", lobbyId, playerId);
             throw new GameException("Player %s not part of lobby %s", playerId, lobbyId);
         }
-        if (playerService.checkForWin(playerId)) {
+        if (lobby.getVictoryPoints(playerId) >= WIN_THRESHOLD) {
             lobby.setGameEnded(true);
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void addVictoryPoints(String lobbyId, String playerId, int points) throws GameException {
+        Lobby lobby = getLobbyById(lobbyId);
+        if (!lobby.getPlayers().contains(playerId)) {
+            logger.errorf("Check for win failed -> Player is not in lobby: lobbyId = %s, playerId = %s", lobbyId, playerId);
+            throw new GameException("Player %s not part of lobby %s", playerId, lobbyId);
+        }
+        lobby.addVictoryPoints(playerId, points);
     }
 
     /**

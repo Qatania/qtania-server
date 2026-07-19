@@ -24,7 +24,6 @@ public class Player {
     private String username;
     private final String uniqueId;
     private final WebSocketConnection connection;
-    private int victoryPoints = 0;
     HashMap<TileType, Integer> resources = new HashMap<>();
 
     final Set<Port> accessiblePorts = new HashSet<>();
@@ -90,14 +89,6 @@ public class Player {
         return uniqueId;
     }
 
-    public int getVictoryPoints() {
-        return victoryPoints;
-    }
-
-    public void resetVictoryPoints() {
-        this.victoryPoints = 0;
-    }
-
     public void addPort(Port port) {
         if (port == null) {
             throw new IllegalArgumentException("Port can't be null");
@@ -105,16 +96,6 @@ public class Player {
 
         accessiblePorts.add(port);
     }
-
-    /**
-     * Adds a specified number of victory points to the player's total.
-     *
-     * @param victoryPoints The number of victory points to add.
-     */
-    public void addVictoryPoints(int victoryPoints) {
-        this.victoryPoints += victoryPoints;
-    }
-
 
     public WebSocketConnection getConnection() {
         return connection;
