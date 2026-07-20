@@ -227,6 +227,37 @@ class LobbyServiceImplTest {
     }
 
     @Test
+    void removePlayerFromLobbyShouldCallNextTurnWhenGameIsActive() throws GameException {
+        String lobbyId = lobbyService.createLobby("HostPlayer");
+        Lobby lobby = lobbyService.getLobbyById(lobbyId);
+        Player player = new Player();
+        lobbyService.joinLobbyByCode(lobbyId, player.getUniqueId());
+        lobby.startGame();
+        lobby.setActivePlayer(player.getUniqueId());
+
+        assertEquals(player.getUniqueId(), lobby.getActivePlayer());
+        lobbyService.removePlayerFromLobby(lobbyId, player.getUniqueId());
+
+        assertEquals("HostPlayer", lobby.getActivePlayer());
+    }
+
+    @Test
+    void removePlayerFromLobbyShouldNotCallNextTurnWhenGameHasEnded() throws GameException {
+        String lobbyId = lobbyService.createLobby("HostPlayer");
+        Lobby lobby = lobbyService.getLobbyById(lobbyId);
+        Player player = new Player();
+        lobbyService.joinLobbyByCode(lobbyId, player.getUniqueId());
+        lobby.startGame();
+        lobby.setActivePlayer(player.getUniqueId());
+        lobby.setGameEnded(true);
+
+        assertEquals(player.getUniqueId(), lobby.getActivePlayer());
+        lobbyService.removePlayerFromLobby(lobbyId, player.getUniqueId());
+
+        assertEquals(player.getUniqueId(), lobby.getActivePlayer());
+    }
+
+    @Test
     void getPlayerColorShouldThrowExceptionIfPlayerHasNoColor() throws GameException {
         String lobbyId = "lobby1";
         String playerId = "Player1";

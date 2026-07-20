@@ -106,17 +106,17 @@ public class Lobby {
      * Removes a player from this lobby by their ID.
      * This also removes the player's color assignment from the lobby's internal map.
      *
-     * @param player The ID of the player to remove.
+     * @param playerId The ID of the player to remove.
      *               Note: {@code playerColors.remove(player)} does not return a boolean indicating removal success directly in this context.
      */
-    public void removePlayer(String player) throws GameException {
-        playerColors.remove(player);
-        readyState.remove(player);
-        playerOrder.remove(player);
-        players.remove(player);
-        resetVictoryPoints(player);
+    public void removePlayer(String playerId) throws GameException {
+        playerColors.remove(playerId);
+        readyState.remove(playerId);
+        playerOrder.remove(playerId);
+        players.remove(playerId);
+        resetVictoryPoints(playerId);
 
-        if (gameStarted && Objects.equals(activePlayer, player)) {
+        if (isGameStarted() && !isGameEnded() && Objects.equals(getActivePlayer(), playerId)) {
             nextPlayerTurn();
         }
     }
