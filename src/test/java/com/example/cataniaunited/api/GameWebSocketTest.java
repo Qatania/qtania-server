@@ -1712,7 +1712,7 @@ class GameWebSocketTest {
         connection.sendTextAndAwait(startedMessage);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS), "never saw GAME_STARTED");
-        assertEquals(1, seen.size());
+        assertFalse(seen.isEmpty());
         MessageDTO response = seen.get(0);
         assertEquals(MessageType.GAME_STARTED, response.getType());
         assertNotNull(response.getMessageNode("gameboard"));

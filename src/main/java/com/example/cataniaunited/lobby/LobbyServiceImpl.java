@@ -193,7 +193,6 @@ public class LobbyServiceImpl implements LobbyService {
             logger.infof("Color %s returned to pool from player %s", color, player);
         }
         lobby.removePlayer(player);
-        lobby.removePlayerColor(player);
         logger.infof("Player %s removed from lobby %s", player, lobbyId);
     }
 

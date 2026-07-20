@@ -106,18 +106,29 @@ public class Lobby {
      * Removes a player from this lobby by their ID.
      * This also removes the player's color assignment from the lobby's internal map.
      *
-     * @param player The ID of the player to remove.
-     *               Note: {@code playerColors.remove(player)} does not return a boolean indicating removal success directly in this context.
+     * @param playerId The ID of the player to remove.
+     *                 Note: {@code playerColors.remove(player)} does not return a boolean indicating removal success directly in this context.
      */
-    public void removePlayer(String player) throws GameException {
-        playerColors.remove(player);
-        readyState.remove(player);
-        playerOrder.remove(player);
-        players.remove(player);
-        resetVictoryPoints(player);
+    public void removePlayer(String playerId) throws GameException {
+        playerColors.remove(playerId);
+        readyState.remove(playerId);
 
-        if (gameStarted && Objects.equals(activePlayer, player)) {
-            nextPlayerTurn();
+        boolean isLastInOrder = !playerOrder.isEmpty() && playerOrder.getLast().equals(playerId);
+        playerOrder.remove(playerId);
+        players.remove(playerId);
+        resetVictoryPoints(playerId);
+
+        if (isGameStarted() && !isGameEnded() && Objects.equals(getActivePlayer(), playerId)) {
+            //The game is active, and it is the players turn
+            // so the turn has to be ended and the next player should be active
+            if (isLastInOrder && roundsPlayed == 0) {
+                //It is setup round and current player is last player, therefore
+                //the previous player should get control
+                activePlayer = playerOrder.getLast();
+                roundsPlayed++;
+            } else {
+                nextPlayerTurn();
+            }
         }
     }
 
