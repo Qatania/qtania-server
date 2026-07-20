@@ -258,6 +258,34 @@ class LobbyServiceImplTest {
     }
 
     @Test
+    void removePlayerFromLobbyShouldCallNextTurnCorrectlyWhenInSetupRoundAndLastPlayerLeaves() throws GameException {
+        Player player = new Player();
+        Player player2 = new Player();
+        Player player3 = new Player();
+        String lobbyId = lobbyService.createLobby(player3.getUniqueId());
+        Lobby lobby = lobbyService.getLobbyById(lobbyId);
+        lobbyService.joinLobbyByCode(lobbyId, player.getUniqueId());
+        lobbyService.joinLobbyByCode(lobbyId, player2.getUniqueId());
+        lobby.startGame();
+        lobby.setPlayerOrder(List.of(player3.getUniqueId(), player2.getUniqueId(), player.getUniqueId()));
+        lobby.setActivePlayer(player.getUniqueId());
+
+        assertEquals(player.getUniqueId(), lobby.getActivePlayer());
+        lobbyService.removePlayerFromLobby(lobbyId, player.getUniqueId());
+
+        assertEquals(player2.getUniqueId(), lobby.getActivePlayer());
+        assertEquals(1, lobby.getRoundsPlayed());
+
+        lobbyService.nextTurn(lobbyId, player2.getUniqueId());
+        assertEquals(player3.getUniqueId(), lobby.getActivePlayer());
+        assertEquals(1, lobby.getRoundsPlayed());
+
+        lobbyService.nextTurn(lobbyId, player3.getUniqueId());
+        assertEquals(player2.getUniqueId(), lobby.getActivePlayer());
+        assertEquals(2, lobby.getRoundsPlayed());
+    }
+
+    @Test
     void getPlayerColorShouldThrowExceptionIfPlayerHasNoColor() throws GameException {
         String lobbyId = "lobby1";
         String playerId = "Player1";

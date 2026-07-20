@@ -107,17 +107,28 @@ public class Lobby {
      * This also removes the player's color assignment from the lobby's internal map.
      *
      * @param playerId The ID of the player to remove.
-     *               Note: {@code playerColors.remove(player)} does not return a boolean indicating removal success directly in this context.
+     *                 Note: {@code playerColors.remove(player)} does not return a boolean indicating removal success directly in this context.
      */
     public void removePlayer(String playerId) throws GameException {
         playerColors.remove(playerId);
         readyState.remove(playerId);
+
+        boolean isLastInOrder = !playerOrder.isEmpty() && playerOrder.getLast().equals(playerId);
         playerOrder.remove(playerId);
         players.remove(playerId);
         resetVictoryPoints(playerId);
 
         if (isGameStarted() && !isGameEnded() && Objects.equals(getActivePlayer(), playerId)) {
-            nextPlayerTurn();
+            //The game is active, and it is the players turn
+            // so the turn has to be ended and the next player should be active
+            if (isLastInOrder && roundsPlayed == 0) {
+                //It is setup round and current player is last player, therefore
+                //the previous player should get control
+                activePlayer = playerOrder.getLast();
+                roundsPlayed++;
+            } else {
+                nextPlayerTurn();
+            }
         }
     }
 
