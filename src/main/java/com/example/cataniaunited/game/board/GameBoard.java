@@ -70,6 +70,7 @@ public class GameBoard {
         generateBoard();
 
         this.diceRoller = new DiceRoller();
+        robber.diceRoller=diceRoller;
         subscribeTilesToDice();
 
         long endtime = System.nanoTime();
@@ -384,7 +385,6 @@ public class GameBoard {
      */
     private void subscribeTilesToDice() {
         tileList.forEach(tile -> tile.subscribeToDice(diceRoller));
-        robber.diceRoller=diceRoller;
         robber.robTile(findWaste());
     }
 
