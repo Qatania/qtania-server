@@ -227,6 +227,65 @@ class LobbyServiceImplTest {
     }
 
     @Test
+    void removePlayerFromLobbyShouldCallNextTurnWhenGameIsActive() throws GameException {
+        String lobbyId = lobbyService.createLobby("HostPlayer");
+        Lobby lobby = lobbyService.getLobbyById(lobbyId);
+        Player player = new Player();
+        lobbyService.joinLobbyByCode(lobbyId, player.getUniqueId());
+        lobby.startGame();
+        lobby.setActivePlayer(player.getUniqueId());
+
+        assertEquals(player.getUniqueId(), lobby.getActivePlayer());
+        lobbyService.removePlayerFromLobby(lobbyId, player.getUniqueId());
+
+        assertEquals("HostPlayer", lobby.getActivePlayer());
+    }
+
+    @Test
+    void removePlayerFromLobbyShouldNotCallNextTurnWhenGameHasEnded() throws GameException {
+        String lobbyId = lobbyService.createLobby("HostPlayer");
+        Lobby lobby = lobbyService.getLobbyById(lobbyId);
+        Player player = new Player();
+        lobbyService.joinLobbyByCode(lobbyId, player.getUniqueId());
+        lobby.startGame();
+        lobby.setActivePlayer(player.getUniqueId());
+        lobby.setGameEnded(true);
+
+        assertEquals(player.getUniqueId(), lobby.getActivePlayer());
+        lobbyService.removePlayerFromLobby(lobbyId, player.getUniqueId());
+
+        assertEquals(player.getUniqueId(), lobby.getActivePlayer());
+    }
+
+    @Test
+    void removePlayerFromLobbyShouldCallNextTurnCorrectlyWhenInSetupRoundAndLastPlayerLeaves() throws GameException {
+        Player player = new Player();
+        Player player2 = new Player();
+        Player player3 = new Player();
+        String lobbyId = lobbyService.createLobby(player3.getUniqueId());
+        Lobby lobby = lobbyService.getLobbyById(lobbyId);
+        lobbyService.joinLobbyByCode(lobbyId, player.getUniqueId());
+        lobbyService.joinLobbyByCode(lobbyId, player2.getUniqueId());
+        lobby.startGame();
+        lobby.setPlayerOrder(List.of(player3.getUniqueId(), player2.getUniqueId(), player.getUniqueId()));
+        lobby.setActivePlayer(player.getUniqueId());
+
+        assertEquals(player.getUniqueId(), lobby.getActivePlayer());
+        lobbyService.removePlayerFromLobby(lobbyId, player.getUniqueId());
+
+        assertEquals(player2.getUniqueId(), lobby.getActivePlayer());
+        assertEquals(1, lobby.getRoundsPlayed());
+
+        lobbyService.nextTurn(lobbyId, player2.getUniqueId());
+        assertEquals(player3.getUniqueId(), lobby.getActivePlayer());
+        assertEquals(1, lobby.getRoundsPlayed());
+
+        lobbyService.nextTurn(lobbyId, player3.getUniqueId());
+        assertEquals(player2.getUniqueId(), lobby.getActivePlayer());
+        assertEquals(2, lobby.getRoundsPlayed());
+    }
+
+    @Test
     void getPlayerColorShouldThrowExceptionIfPlayerHasNoColor() throws GameException {
         String lobbyId = "lobby1";
         String playerId = "Player1";
@@ -430,5 +489,35 @@ class LobbyServiceImplTest {
         String playerId = "player1";
         GameException ge = assertThrows(GameException.class, () -> lobbyService.checkForWin(lobbyId, playerId));
         assertEquals("Player %s not part of lobby %s".formatted(playerId, lobbyId), ge.getMessage());
+    }
+
+    @Test
+    void addVictoryPointsIncreasesPointsCorrectly() throws GameException {
+        String lobbyId = lobbyService.createLobby("HostPlayer");
+        Lobby lobby = lobbyService.getLobbyById(lobbyId);
+        Player player = new Player("Player1");
+        lobbyService.joinLobbyByCode(lobbyId, player.getUniqueId());
+        lobbyService.addVictoryPoints(lobbyId, player.getUniqueId(), 2);
+        lobbyService.addVictoryPoints(lobbyId, player.getUniqueId(), 3);
+        assertEquals(5, lobby.getVictoryPoints(player.getUniqueId()));
+    }
+
+    @Test
+    void checkForWinReturnsFalseIfLessThanTenPoints() throws GameException {
+        String lobbyId = lobbyService.createLobby("HostPlayer");
+        Lobby lobby = lobbyService.getLobbyById(lobbyId);
+        Player player = new Player("Player1");
+        lobbyService.joinLobbyByCode(lobbyId, player.getUniqueId());
+        lobbyService.addVictoryPoints(lobbyId, player.getUniqueId(), 9);
+        assertFalse(lobbyService.checkForWin(lobbyId, player.getUniqueId()));
+    }
+
+    @Test
+    void checkForWinReturnsTrueIfTenPoints() throws GameException {
+        String lobbyId = lobbyService.createLobby("HostPlayer");
+        Player player = new Player("Player1");
+        lobbyService.joinLobbyByCode(lobbyId, player.getUniqueId());
+        lobbyService.addVictoryPoints(lobbyId, player.getUniqueId(), 10);
+        assertTrue(lobbyService.checkForWin(lobbyId, player.getUniqueId()));
     }
 }

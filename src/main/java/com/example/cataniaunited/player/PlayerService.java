@@ -27,7 +27,6 @@ public class PlayerService {
     private final ConcurrentHashMap<String, Player> playersByConnectionId = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Player> playersById = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, WebSocketConnection> connectionsByPlayerId = new ConcurrentHashMap<>();
-    public static final int WIN_THRESHOLD = 10;
 
     /**
      * Adds a new player associated with a WebSocket connection.
@@ -103,37 +102,6 @@ public class PlayerService {
     public void clearAllPlayersForTesting() {
         playersByConnectionId.clear();
         playersById.clear();
-    }
-
-    /**
-     * Adds a specified number of victory points to a player.
-     *
-     * @param playerId The ID of the player.
-     * @param points   The number of victory points to add.
-     */
-    public void addVictoryPoints(String playerId, int points) {
-        Player player = getPlayerById(playerId);
-        if (player != null) {
-            player.addVictoryPoints(points);
-        }
-    }
-
-    public void resetVictoryPoints(String playerId) {
-        Player player = getPlayerById(playerId);
-        if (player != null) {
-            player.resetVictoryPoints();
-        }
-    }
-
-    /**
-     * Checks if a player has reached the victory point threshold to win the game.
-     *
-     * @param playerId The ID of the player to check.
-     * @return true if the player has met or exceeded the {@link #WIN_THRESHOLD}, false otherwise or if player not found.
-     */
-    public boolean checkForWin(String playerId) {
-        Player player = getPlayerById(playerId);
-        return player != null && player.getVictoryPoints() >= WIN_THRESHOLD;
     }
 
     public void setUsername(String playerId, String username) throws GameException {

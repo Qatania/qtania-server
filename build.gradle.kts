@@ -1,7 +1,6 @@
 plugins {
     java
     id("io.quarkus")
-    id("jacoco")
     id("org.sonarqube") version "6.0.1.5171"
 }
 
@@ -27,6 +26,7 @@ dependencies {
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("io.quarkus:quarkus-junit5-mockito")
     testImplementation("io.rest-assured:rest-assured")
+    testImplementation("io.quarkus:quarkus-jacoco")
 }
 
 group = "org.catutd"
@@ -43,6 +43,7 @@ sonar {
         property("sonar.organization", "cataniaunited")
         property("sonar.host.url", "https://sonarcloud.io")
         property("sonar.java.coveragePlugin", "jacoco")
+        property("sonar.coverage.jacoco.xmlReportPaths", "build/jacoco-report/jacoco.xml")
     }
 }
 
@@ -61,14 +62,4 @@ tasks.withType<JavaCompile> {
 
 tasks.test {
     useJUnitPlatform()
-    finalizedBy(tasks.jacocoTestReport)
-}
-
-tasks.jacocoTestReport {
-    dependsOn(tasks.test)
-
-    reports {
-        xml.required.set(true)
-        html.required.set(true)
-    }
 }

@@ -100,13 +100,13 @@ class GameMessageHandlerTest {
         String player2Username = "Player 2";
         playerService.setUsername(player2.getUniqueId(), player2Username);
 
-        player.addVictoryPoints(6);
-        player2.addVictoryPoints(8);
         player2.receiveResource(TileType.ORE, 3);
         player2.receiveResource(TileType.WOOD, 4);
         String lobbyId = lobbyService.createLobby(player.getUniqueId());
         lobbyService.joinLobbyByCode(lobbyId, player2.getUniqueId());
         Lobby lobby = lobbyService.getLobbyById(lobbyId);
+        lobby.addVictoryPoints(player.getUniqueId(), 6);
+        lobby.addVictoryPoints(player2.getUniqueId(), 8);
         PlayerColor playerColor = lobby.getPlayerColor(player.getUniqueId());
         PlayerColor player2Color = lobby.getPlayerColor(player2.getUniqueId());
 

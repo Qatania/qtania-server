@@ -130,4 +130,13 @@ public interface LobbyService {
     void toggleReady(String lobbyId, String playerId) throws GameException;
 
     boolean checkForWin(String lobbyId, String playerId) throws GameException;
+
+    /**
+     * Adds a specified number of victory points to a player.
+     *
+     * @param lobbyId  The ID of the lobby.
+     * @param playerId The ID of the player.
+     * @param points   The number of victory points to add.
+     */
+    void addVictoryPoints(String lobbyId, String playerId, int points) throws GameException;
 }

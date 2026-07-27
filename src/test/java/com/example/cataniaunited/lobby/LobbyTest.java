@@ -2,6 +2,7 @@ package com.example.cataniaunited.lobby;
 
 import com.example.cataniaunited.exception.GameException;
 import com.example.cataniaunited.player.PlayerColor;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -16,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@QuarkusTest
 class LobbyTest {
 
     Lobby testLobby;
@@ -437,6 +440,21 @@ class LobbyTest {
 
         lobby.markCheaterAsCaught(playerId);
         assertTrue(lobby.isCheaterAlreadyCaught(playerId));
+    }
+
+    @Test
+    void resetVictoryPointsShouldNotFailOnNonExistingPlayer() {
+        assertDoesNotThrow(() -> testLobby.resetVictoryPoints("non-existent-player-id-123"));
+    }
+
+    @Test
+    void resetVictoryPointsShouldSetVictoryPointsOfPlayerToZero() {
+        String playerId = "TestPlayer";
+        int currentVictoryPoints = testLobby.getVictoryPoints(playerId);
+        testLobby.addVictoryPoints(playerId, 5);
+        assertEquals(currentVictoryPoints + 5, testLobby.getVictoryPoints(playerId));
+        testLobby.resetVictoryPoints(playerId);
+        assertEquals(0, testLobby.getVictoryPoints(playerId));
     }
 
 }

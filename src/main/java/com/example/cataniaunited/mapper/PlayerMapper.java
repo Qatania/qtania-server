@@ -15,6 +15,7 @@ import java.util.Objects;
 public interface PlayerMapper {
 
     @Mapping(source = "player.uniqueId", target = "id")
+    @Mapping(target = "victoryPoints", expression = "java( mapVictoryPoints(player, lobby) )")
     @Mapping(target = "color", expression = "java( mapPlayerColor(player, lobby) )")
     @Mapping(target = "isHost", expression = "java( isHost(player, lobby) )")
     @Mapping(target = "isReady", expression = "java( isReady(player, lobby) )")
@@ -45,5 +46,9 @@ public interface PlayerMapper {
 
     default boolean canRollDice(Player player, @Context Lobby lobby) {
         return lobby.canRollDice(player.getUniqueId());
+    }
+
+    default int mapVictoryPoints(Player player, @Context Lobby lobby) {
+        return lobby.getVictoryPoints(player.getUniqueId());
     }
 }
