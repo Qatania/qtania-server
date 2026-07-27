@@ -70,36 +70,38 @@ public class GameService {
 
     public void placeRobber(String lobbyId, int targetTileId,String playerId) throws GameException {
         lobbyService.checkPlayerTurn(lobbyId,playerId);
-        GameBoard gameboard = getGameboardByLobbyId(lobbyId);
+        if(playerService.getPlayerById(playerId).isNeedsToMoveRobber()) {
+            GameBoard gameboard = getGameboardByLobbyId(lobbyId);
 
 
-        Robber robber = gameboard.getRobber();
-        if (robber == null) {
-            throw new GameException("Robber tracking instance not initialized on the board.");
+            Robber robber = gameboard.getRobber();
+            if (robber == null) {
+                throw new GameException("Robber tracking instance not initialized on the board.");
+            }
+
+
+            Tile targetTile = gameboard.getTileList().stream()
+                    .filter(tile -> tile.getId() == targetTileId)
+                    .findFirst()
+                    .orElseThrow(() -> new GameException("Target tile ID %d not found on the board.", targetTileId));
+
+            robber.robTile(targetTile);
+            //TODO: Find out if player can steal from someone.
+            Set<String> players = lobbyService.getLobbyById(lobbyId).getPlayers();
+
+            players.stream()
+                    .map(playerService::getPlayerById)
+                    .filter(Objects::nonNull)
+                    .filter(player -> !isEmpty(player.getResources()) && player.getResources().size() > 7)
+                    .forEach(player -> {
+                        try {
+                            punishCheater(player);
+                        } catch (GameException e) {
+                            Log.errorf(e, "Could not half the resources of the player: playerId = %s", player.getUniqueId());
+                        }
+                    });
+            logger.infof("Robber successfully moved to tile ID %d in lobby %s", targetTileId, lobbyId);
         }
-
-
-        Tile targetTile = gameboard.getTileList().stream()
-                .filter(tile -> tile.getId() == targetTileId)
-                .findFirst()
-                .orElseThrow(() -> new GameException("Target tile ID %d not found on the board.", targetTileId));
-
-        robber.robTile(targetTile);
-        //TODO: Find out if player can steal from someone.
-        Set<String> players  = lobbyService.getLobbyById(lobbyId).getPlayers();
-
-        players.stream()
-                .map(playerService::getPlayerById)
-                .filter(Objects::nonNull)
-                .filter(player -> !isEmpty(player.getResources()) && player.getResources().size() > 7)
-                .forEach(player -> {
-                    try {
-                        punishCheater(player);
-                    } catch (GameException e) {
-                        Log.errorf(e, "Could not half the resources of the player: playerId = %s", player.getUniqueId());
-                    }
-                });
-        logger.infof("Robber successfully moved to tile ID %d in lobby %s", targetTileId, lobbyId);
     }
 
     /**
@@ -289,6 +291,10 @@ public class GameService {
         GameBoard gameboard = getGameboardByLobbyId(lobbyId);
         ObjectNode result = gameboard.rollDice();
         lobbyService.updateLatestDiceRoll(lobbyId, playerId);
+        lobbyService.getLobbyById(lobbyId).addDiceRoll(playerId,result.get("total").asInt());
+        if(result.get("total").asInt() == 7){
+            playerService.getPlayerById(playerId).robberNeedsToMove(true);
+        }
         return result;
     }
 

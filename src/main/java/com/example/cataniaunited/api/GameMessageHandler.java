@@ -298,6 +298,8 @@ public class GameMessageHandler {
         }
 
         gameService.placeRobber(message.getLobbyId(), targetTileId,message.getPlayer());
+        playerService.getPlayerById(message.getPlayer()).robberNeedsToMove(false);
+
         ObjectNode updatedBoardJson = getGameBoardInformation(message.getLobbyId());
 
         MessageDTO updateResponse = new MessageDTO(
@@ -307,6 +309,7 @@ public class GameMessageHandler {
                 getLobbyPlayerInformation(message.getLobbyId()),
                 updatedBoardJson
         );
+
 
         // Broadcast layout mutations to all connected websocket sessions in the room
         return lobbyService.notifyPlayers(message.getLobbyId(), updateResponse, message.getPlayer())

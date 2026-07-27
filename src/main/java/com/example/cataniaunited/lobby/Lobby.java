@@ -1,18 +1,13 @@
 package com.example.cataniaunited.lobby;
 
 import com.example.cataniaunited.exception.GameException;
+import com.example.cataniaunited.game.dice.Dice;
+import com.example.cataniaunited.game.dice.DiceHistory;
 import com.example.cataniaunited.player.PlayerColor;
 import org.jboss.logging.Logger;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -26,7 +21,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class Lobby {
 
     private static final Logger logger = Logger.getLogger(Lobby.class);
-
+    private List<DiceHistory> diceHistorie;
     private final String lobbyId;
     private final Instant createdAt;
     private final String hostPlayer; // ID of the player who created the lobby
@@ -63,6 +58,7 @@ public class Lobby {
         Collections.addAll(availableColors, PlayerColor.values());
         players.add(hostPlayer);
         setPlayerColor(hostPlayer, assignAvailableColor());
+        diceHistorie = new LinkedList<>();
     }
 
     /**
@@ -431,5 +427,8 @@ public class Lobby {
 
     public void resetVictoryPoints(String playerId) {
         this.leaderboard.remove(playerId);
+    }
+    public void addDiceRoll(String activePlayer, int diceRoll){
+        diceHistorie.add(new DiceHistory(activePlayer,diceRoll));
     }
 }

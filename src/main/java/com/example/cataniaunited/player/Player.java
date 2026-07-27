@@ -31,8 +31,8 @@ public class Player {
     private boolean needsToMoveRobber = false;
     public boolean isNeedsToMoveRobber() { return needsToMoveRobber; }
 
-    public void robberNeedsToMove(){
-        needsToMoveRobber=true;
+    public void robberNeedsToMove(boolean needsToMoveRobber){
+        this.needsToMoveRobber=needsToMoveRobber;
     }
 
     /**
