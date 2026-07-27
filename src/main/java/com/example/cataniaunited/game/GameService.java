@@ -17,6 +17,7 @@ import com.example.cataniaunited.player.Player;
 import com.example.cataniaunited.player.PlayerColor;
 import com.example.cataniaunited.player.PlayerService;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
@@ -24,6 +25,8 @@ import org.jboss.logging.Logger;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static com.example.cataniaunited.util.Util.isEmpty;
 
 /**
  * Service class for managing game logic, including game board creation,
@@ -81,18 +84,21 @@ public class GameService {
                 .findFirst()
                 .orElseThrow(() -> new GameException("Target tile ID %d not found on the board.", targetTileId));
 
-
         robber.robTile(targetTile);
         //TODO: Find out if player can steal from someone.
         Set<String> players  = lobbyService.getLobbyById(lobbyId).getPlayers();
 
-        for (String player:players) {
-
-            if(playerService.getPlayerById(player).getResources().size()>7){
-                punishCheater(playerService.getPlayerById(player));
-            }
-
-        }
+        players.stream()
+                .map(playerService::getPlayerById)
+                .filter(Objects::nonNull)
+                .filter(player -> !isEmpty(player.getResources()) && player.getResources().size() > 7)
+                .forEach(player -> {
+                    try {
+                        punishCheater(player);
+                    } catch (GameException e) {
+                        Log.errorf(e, "Could not half the resources of the player: playerId = %s", player.getUniqueId());
+                    }
+                });
         logger.infof("Robber successfully moved to tile ID %d in lobby %s", targetTileId, lobbyId);
     }
 

@@ -8,6 +8,7 @@ import com.example.cataniaunited.player.PlayerService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.quarkus.logging.Log;
 
 import java.util.List;
 
@@ -44,15 +45,22 @@ public class Robber implements Placable {
     }
 
     public void robTile(Tile tile){
-        moveAway();
-        tileID =tile.getId();
-        diceRoller.removeSubscriber(tile);
-        this.tile = tile;
+        if(tile!=null) {
+            moveAway();
+            tileID = tile.getId();
+            coordinates = tile.getCoordinates();
+            diceRoller.removeSubscriber(tile);
+            this.tile = tile;
+        }else {
+            Log.warnf("Tile has not been found. ");
+        }
     }
 
     public void moveAway(){
         if(tile!=null){
             diceRoller.addSubscriber(tile);
+        }else {
+            Log.warnf("Tile has not been found. ");
         }
     }
 

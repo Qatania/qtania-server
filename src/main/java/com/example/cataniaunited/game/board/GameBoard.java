@@ -70,9 +70,10 @@ public class GameBoard {
         generateBoard();
 
         this.diceRoller = new DiceRoller();
-        robber.diceRoller=diceRoller;
-        subscribeTilesToDice();
 
+        subscribeTilesToDice();
+        robber.diceRoller=diceRoller;
+        robber.robTile(findWaste());
         long endtime = System.nanoTime();
 
         // Something went wrong
@@ -113,7 +114,7 @@ public class GameBoard {
         tileList = director.constructStandardTileList(sizeOfBoard, SIZE_OF_HEX, true);
 
     }
-    Tile findWaste(){
+    private Tile findWaste(){
         for(Tile tile : tileList){
             if(tile.getType().equals(TileType.WASTE)){
                 return tile;
@@ -385,7 +386,7 @@ public class GameBoard {
      */
     private void subscribeTilesToDice() {
         tileList.forEach(tile -> tile.subscribeToDice(diceRoller));
-        robber.robTile(findWaste());
+
     }
 
     /**
