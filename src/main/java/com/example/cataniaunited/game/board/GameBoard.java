@@ -61,7 +61,7 @@ public class GameBoard {
         if (playerCount <= 1) {
             throw new IllegalArgumentException("Player count must be greater than 1.");
         }
-
+        robber= new Robber();
         sizeOfBoard = calculateSizeOfBoard(playerCount);
         logger.infof("Generating Board for %d players, with %d Levels...%n", playerCount, sizeOfBoard);
         long starttime = System.nanoTime();
@@ -81,6 +81,7 @@ public class GameBoard {
         }
 
         logger.infof("Generated Board for %d players, with %d Levels in %fs%n".formatted(playerCount, sizeOfBoard, (endtime - starttime) * 10e-10));
+
     }
 
     /**
@@ -109,9 +110,8 @@ public class GameBoard {
         TileListBuilder tileBuilder = new StandardTileListBuilder();
         TileListDirector director = new TileListDirector(tileBuilder);
         tileList = director.constructStandardTileList(sizeOfBoard, SIZE_OF_HEX, true);
-        robber = new Robber();
         robber.diceRoller=diceRoller;
-        robber.rob_Tile(findWaste());
+        robber.robTile(findWaste());
     }
     Tile findWaste(){
         for(Tile tile : tileList){
@@ -360,7 +360,7 @@ public class GameBoard {
 
         boardNode.put("ringsOfBoard", this.sizeOfBoard);
         boardNode.put("sizeOfHex", DEFAULT_TILES_PER_PLAYER_GOAL);
-        boardNode.put("robber",robber.toJson());
+        boardNode.set("robber",robber.toJson());
 
         return boardNode;
     }

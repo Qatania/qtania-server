@@ -292,12 +292,12 @@ public class GameMessageHandler {
 
         int targetTileId;
         try {
-            targetTileId = Integer.parseInt(tileIdNode.toString());
+            targetTileId = tileIdNode.asInt();
         } catch (NumberFormatException e) {
             throw new GameException("Invalid tile ID format provided: %s", tileIdNode.toString());
         }
 
-        gameService.placeRobber(message.getLobbyId(), targetTileId);
+        gameService.placeRobber(message.getLobbyId(), targetTileId,message.getPlayer());
         ObjectNode updatedBoardJson = getGameBoardInformation(message.getLobbyId());
 
         MessageDTO updateResponse = new MessageDTO(

@@ -7,6 +7,7 @@ import com.example.cataniaunited.game.board.GameBoard;
 import com.example.cataniaunited.game.board.LongestRoadCalculator;
 import com.example.cataniaunited.game.board.Road;
 import com.example.cataniaunited.game.board.ports.Port;
+import com.example.cataniaunited.game.board.tile_list_builder.Tile;
 import com.example.cataniaunited.game.board.tile_list_builder.TileType;
 import com.example.cataniaunited.game.buildings.Settlement;
 import com.example.cataniaunited.game.robber.Robber;
@@ -21,13 +22,7 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -70,7 +65,8 @@ public class GameService {
         return gameboard;
     }
 
-    public void placeRobber(String lobbyId, int targetTileId) throws GameException {
+    public void placeRobber(String lobbyId, int targetTileId,String playerId) throws GameException {
+        lobbyService.checkPlayerTurn(lobbyId,playerId);
         GameBoard gameboard = getGameboardByLobbyId(lobbyId);
 
 
@@ -80,16 +76,23 @@ public class GameService {
         }
 
 
-        com.example.cataniaunited.game.board.tile_list_builder.Tile targetTile = gameboard.getTileList().stream()
-                .filter(tile -> tile.getValue() == targetTileId)
+        Tile targetTile = gameboard.getTileList().stream()
+                .filter(tile -> tile.getId() == targetTileId)
                 .findFirst()
                 .orElseThrow(() -> new GameException("Target tile ID %d not found on the board.", targetTileId));
 
 
-        robber.rob_Tile(targetTile);
-        robber.rob_Player(playerService);
+        robber.robTile(targetTile);
         //TODO: Find out if player can steal from someone.
+        Set<String> players  = lobbyService.getLobbyById(lobbyId).getPlayers();
 
+        for (String player:players) {
+
+            if(playerService.getPlayerById(player).getResources().size()>7){
+                punishCheater(playerService.getPlayerById(player));
+            }
+
+        }
         logger.infof("Robber successfully moved to tile ID %d in lobby %s", targetTileId, lobbyId);
     }
 
