@@ -22,6 +22,8 @@ public interface PlayerMapper {
     @Mapping(target = "isActivePlayer", expression = "java( isActivePlayer(player, lobby) )")
     @Mapping(target = "canRollDice", expression = "java( canRollDice(player, lobby) )")
     @Mapping(target = "isSetupRound", expression = "java( lobby.getRoundsPlayed() <= 1 )")
+    @Mapping(source="player.needsToMoveRobber",target="needsToMoveRobber")
+
     PlayerInfo toDto(Player player, @Context Lobby lobby);
 
     default String mapPlayerColor(Player player, @Context Lobby lobby) {

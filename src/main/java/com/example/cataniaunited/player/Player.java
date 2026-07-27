@@ -28,6 +28,13 @@ public class Player {
 
     final Set<Port> accessiblePorts = new HashSet<>();
 
+    private boolean needsToMoveRobber = false;
+    public boolean isNeedsToMoveRobber() { return needsToMoveRobber; }
+
+    public void robberNeedsToMove(){
+        needsToMoveRobber=true;
+    }
+
     /**
      * Default constructor. Creates a player with a random username and a unique ID.
      * The WebSocket connection will be null.

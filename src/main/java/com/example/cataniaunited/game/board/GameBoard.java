@@ -74,6 +74,7 @@ public class GameBoard {
         subscribeTilesToDice();
         robber.diceRoller=diceRoller;
         robber.robTile(findWaste());
+
         long endtime = System.nanoTime();
 
         // Something went wrong

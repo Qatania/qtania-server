@@ -13,6 +13,7 @@ public record PlayerInfo(
         boolean isActivePlayer,
         boolean canRollDice,
         boolean isSetupRound,
+        boolean needsToMoveRobber,
         int victoryPoints,
         Map<TileType, Integer> resources) {
 }
