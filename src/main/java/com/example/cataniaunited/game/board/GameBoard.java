@@ -110,8 +110,7 @@ public class GameBoard {
         TileListBuilder tileBuilder = new StandardTileListBuilder();
         TileListDirector director = new TileListDirector(tileBuilder);
         tileList = director.constructStandardTileList(sizeOfBoard, SIZE_OF_HEX, true);
-        robber.diceRoller=diceRoller;
-        robber.robTile(findWaste());
+
     }
     Tile findWaste(){
         for(Tile tile : tileList){
@@ -385,6 +384,8 @@ public class GameBoard {
      */
     private void subscribeTilesToDice() {
         tileList.forEach(tile -> tile.subscribeToDice(diceRoller));
+        robber.diceRoller=diceRoller;
+        robber.robTile(findWaste());
     }
 
     /**
