@@ -325,6 +325,10 @@ public class LobbyServiceImpl implements LobbyService {
     @Override
     public String nextTurn(String lobbyId, String playerId) throws GameException {
         Lobby lobby = getLobbyById(lobbyId);
+        checkPlayerTurn(lobby, playerId);
+        if (lobby.canPlaceRobber(playerId)) {
+            throw new GameException("Please move the robber before ending your turn!");
+        }
         lobby.nextPlayerTurn();
         String activePlayerId = lobby.getActivePlayer();
         logger.debugf("Player ended turn: lobbyId=%s, previousActivePlayer=%s, nextActivePlayer=%s", lobbyId, playerId, activePlayerId);
