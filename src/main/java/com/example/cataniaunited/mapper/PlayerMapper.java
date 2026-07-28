@@ -22,8 +22,7 @@ public interface PlayerMapper {
     @Mapping(target = "isActivePlayer", expression = "java( isActivePlayer(player, lobby) )")
     @Mapping(target = "canRollDice", expression = "java( canRollDice(player, lobby) )")
     @Mapping(target = "isSetupRound", expression = "java( lobby.getRoundsPlayed() <= 1 )")
-    @Mapping(source="player.needsToMoveRobber",target="needsToMoveRobber")
-
+    @Mapping(target = "needsToMoveRobber", expression = "java( needsToMoveRobber(player, lobby) )")
     PlayerInfo toDto(Player player, @Context Lobby lobby);
 
     default String mapPlayerColor(Player player, @Context Lobby lobby) {
@@ -52,5 +51,9 @@ public interface PlayerMapper {
 
     default int mapVictoryPoints(Player player, @Context Lobby lobby) {
         return lobby.getVictoryPoints(player.getUniqueId());
+    }
+
+    default boolean needsToMoveRobber(Player player, @Context Lobby lobby) {
+        return lobby.canPlaceRobber(player.getUniqueId()) && !lobby.isRobberPlaced();
     }
 }

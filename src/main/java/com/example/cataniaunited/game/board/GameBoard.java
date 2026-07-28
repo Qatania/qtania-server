@@ -27,6 +27,7 @@ import org.jboss.logging.Logger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Represents the Catan game board, including its tiles, building sites, and roads.
@@ -39,7 +40,7 @@ public class GameBoard {
     private String longestRoadPlayerId = null;
     private int longestRoadLength = 0;
 
-    private Robber robber;
+    private final Robber robber;
     final int sizeOfBoard; // Number of rings/layers of tiles from the center
     private final DiceRoller diceRoller;
     private final Map<String, Map<Placable, Class<? extends Buildable>>> playerStructures = new HashMap<>();
@@ -61,7 +62,7 @@ public class GameBoard {
         if (playerCount <= 1) {
             throw new IllegalArgumentException("Player count must be greater than 1.");
         }
-        robber= new Robber();
+        robber = new Robber();
         sizeOfBoard = calculateSizeOfBoard(playerCount);
         logger.infof("Generating Board for %d players, with %d Levels...%n", playerCount, sizeOfBoard);
         long starttime = System.nanoTime();
@@ -72,8 +73,8 @@ public class GameBoard {
         this.diceRoller = new DiceRoller();
 
         subscribeTilesToDice();
-        robber.diceRoller=diceRoller;
-        robber.robTile(findWaste());
+        robber.diceRoller = diceRoller;
+        robber.robTile(findWasteTile());
 
         long endtime = System.nanoTime();
 
@@ -115,14 +116,15 @@ public class GameBoard {
         tileList = director.constructStandardTileList(sizeOfBoard, SIZE_OF_HEX, true);
 
     }
-    private Tile findWaste(){
-        for(Tile tile : tileList){
-            if(tile.getType().equals(TileType.WASTE)){
-                return tile;
-            }
-        }
-        return null;
+
+    private Tile findWasteTile() {
+        return tileList.stream()
+                .filter(Objects::nonNull)
+                .filter(tile -> TileType.WASTE.equals(tile.getType()))
+                .findFirst()
+                .orElse(null);
     }
+
     /**
      * Generates the graph structure of building sites and roads for the game board.
      * This method relies on the tile list having been generated first.
@@ -219,9 +221,9 @@ public class GameBoard {
     private boolean hasAdjacentRoads(Road road, Player player) {
         List<Road> currentRoadList = road.getAdjacentRoads().stream().filter(r -> r.getOwner() == player).toList();
         List<BuildingSite> buildingSites = road.getBuildingSites();
-        for(Road adjacentRoad : currentRoadList){
+        for (Road adjacentRoad : currentRoadList) {
             BuildingSite interMediateBuildingSite = adjacentRoad.getBuildingSites().stream().filter(buildingSites::contains).toList().get(0);
-            if(interMediateBuildingSite.getBuildingOwner() == null || interMediateBuildingSite.getBuildingOwner() == player){
+            if (interMediateBuildingSite.getBuildingOwner() == null || interMediateBuildingSite.getBuildingOwner() == player) {
                 return true;
             }
         }
@@ -362,7 +364,7 @@ public class GameBoard {
 
         boardNode.put("ringsOfBoard", this.sizeOfBoard);
         boardNode.put("sizeOfHex", DEFAULT_TILES_PER_PLAYER_GOAL);
-        boardNode.set("robber",robber.toJson());
+        boardNode.set("robber", robber.toJson());
 
         return boardNode;
     }

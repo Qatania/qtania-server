@@ -283,8 +283,6 @@ public class GameMessageHandler {
     }
 
     Uni<MessageDTO> placeRobber(MessageDTO message) throws GameException {
-
-
         JsonNode tileIdNode = message.getMessageNode("tileId");
         if (tileIdNode.isMissingNode()) {
             throw new GameException("Missing required 'tileId' field for placing the robber.");
@@ -298,7 +296,6 @@ public class GameMessageHandler {
         }
 
         gameService.placeRobber(message.getLobbyId(), targetTileId,message.getPlayer());
-        playerService.getPlayerById(message.getPlayer()).robberNeedsToMove(false);
 
         ObjectNode updatedBoardJson = getGameBoardInformation(message.getLobbyId());
 
