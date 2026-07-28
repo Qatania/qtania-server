@@ -99,7 +99,13 @@ public class GameService {
                 .stream()
                 .map(playerService::getPlayerById)
                 .filter(Objects::nonNull)
-                .filter(player -> !isEmpty(player.getResources()) && player.getResources().size() > ROBBER_PUNISHMENT_THRESHOLD)
+                .filter(player -> !isEmpty(player.getResources()))
+                .filter(player -> {
+                    int resourceCount = player.getResources()
+                            .values().stream()
+                            .reduce(0, Integer::sum);
+                    return resourceCount > ROBBER_PUNISHMENT_THRESHOLD;
+                })
                 .forEach(player -> {
                     try {
                         punishPlayer(player);
