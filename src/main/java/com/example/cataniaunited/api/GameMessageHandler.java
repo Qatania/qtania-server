@@ -141,6 +141,7 @@ public class GameMessageHandler {
                 case CHEAT_ATTEMPT -> handleCheatAttempt(message);
                 case REPORT_PLAYER -> handleReportPlayer(message);
                 case END_TURN -> endTurn(message);
+                case PLACE_ROBBER -> placeRobber(message);
                 default -> throw new GameException("Invalid client command");
             };
         } catch (GameException ge) {
@@ -281,6 +282,36 @@ public class GameMessageHandler {
         return sourcePlayer.getConnection().sendText(tradeRequestNotification).chain(() -> Uni.createFrom().nullItem());
     }
 
+    Uni<MessageDTO> placeRobber(MessageDTO message) throws GameException {
+        JsonNode tileIdNode = message.getMessageNode("tileId");
+        if (tileIdNode.isMissingNode()) {
+            throw new GameException("Missing required 'tileId' field for placing the robber.");
+        }
+
+        int targetTileId;
+        try {
+            targetTileId = tileIdNode.asInt();
+        } catch (NumberFormatException e) {
+            throw new GameException("Invalid tile ID format provided: %s", tileIdNode.toString());
+        }
+
+        gameService.placeRobber(message.getLobbyId(), targetTileId,message.getPlayer());
+
+        ObjectNode updatedBoardJson = getGameBoardInformation(message.getLobbyId());
+
+        MessageDTO updateResponse = new MessageDTO(
+                MessageType.PLACE_ROBBER,
+                message.getPlayer(),
+                message.getLobbyId(),
+                getLobbyPlayerInformation(message.getLobbyId()),
+                updatedBoardJson
+        );
+
+
+        // Broadcast layout mutations to all connected websocket sessions in the room
+        return lobbyService.notifyPlayers(message.getLobbyId(), updateResponse, message.getPlayer())
+                .chain(() -> Uni.createFrom().item(updateResponse));
+    }
     Uni<MessageDTO> endTurn(MessageDTO message) throws GameException {
         Lobby lobby = lobbyService.getLobbyById(message.getLobbyId());
         gameService.checkRequiredPlayerStructures(message.getLobbyId(), message.getPlayer(), lobby.getRoundsPlayed());

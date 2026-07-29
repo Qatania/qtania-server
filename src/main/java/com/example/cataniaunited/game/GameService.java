@@ -7,14 +7,17 @@ import com.example.cataniaunited.game.board.GameBoard;
 import com.example.cataniaunited.game.board.LongestRoadCalculator;
 import com.example.cataniaunited.game.board.Road;
 import com.example.cataniaunited.game.board.ports.Port;
+import com.example.cataniaunited.game.board.tile_list_builder.Tile;
 import com.example.cataniaunited.game.board.tile_list_builder.TileType;
 import com.example.cataniaunited.game.buildings.Settlement;
+import com.example.cataniaunited.game.robber.Robber;
 import com.example.cataniaunited.lobby.Lobby;
 import com.example.cataniaunited.lobby.LobbyService;
 import com.example.cataniaunited.player.Player;
 import com.example.cataniaunited.player.PlayerColor;
 import com.example.cataniaunited.player.PlayerService;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
@@ -28,6 +31,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static com.example.cataniaunited.util.Util.isEmpty;
 
 /**
  * Service class for managing game logic, including game board creation,
@@ -44,6 +49,7 @@ public class GameService {
     private static final Logger logger = Logger.getLogger(GameService.class);
     private static final ConcurrentHashMap<String, GameBoard> lobbyToGameboardMap = new ConcurrentHashMap<>();
     private static final int MIN_LONGEST_ROAD_LENGTH = 5;
+    private static final int ROBBER_PUNISHMENT_THRESHOLD = 7;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
 
@@ -67,6 +73,49 @@ public class GameService {
         GameBoard gameboard = new GameBoard(lobby.getPlayers().size());
         addGameboardToList(lobby.getLobbyId(), gameboard);
         return gameboard;
+    }
+
+    public void placeRobber(String lobbyId, int targetTileId, String playerId) throws GameException {
+        lobbyService.checkPlayerCanPlaceRobber(lobbyId, playerId);
+        GameBoard gameboard = getGameboardByLobbyId(lobbyId);
+
+        Robber robber = gameboard.getRobber();
+        if (robber == null) {
+            throw new GameException("Robber tracking instance not initialized on the board.");
+        }
+
+        Tile targetTile = gameboard.getTileList().stream()
+                .filter(tile -> tile.getId() == targetTileId)
+                .findFirst()
+                .orElseThrow(() -> new GameException("Target tile ID %d not found on the board.", targetTileId));
+
+        robber.robTile(targetTile);
+        //TODO: Find out if player can steal from someone.
+
+        Lobby lobby = lobbyService.getLobbyById(lobbyId);
+
+        //Punish all players with more than 7 resources
+        lobby.getPlayers()
+                .stream()
+                .map(playerService::getPlayerById)
+                .filter(Objects::nonNull)
+                .filter(player -> !isEmpty(player.getResources()))
+                .filter(player -> {
+                    int resourceCount = player.getResources()
+                            .values().stream()
+                            .reduce(0, Integer::sum);
+                    return resourceCount > ROBBER_PUNISHMENT_THRESHOLD;
+                })
+                .forEach(player -> {
+                    try {
+                        punishPlayer(player);
+                    } catch (GameException e) {
+                        Log.errorf(e, "Could not half the resources of the player: playerId = %s", player.getUniqueId());
+                    }
+                });
+
+        lobby.setRobberPlaced(true);
+        logger.infof("Robber successfully moved to tile ID %d in lobby %s", targetTileId, lobbyId);
     }
 
     /**
@@ -256,6 +305,9 @@ public class GameService {
         GameBoard gameboard = getGameboardByLobbyId(lobbyId);
         ObjectNode result = gameboard.rollDice();
         lobbyService.updateLatestDiceRoll(lobbyId, playerId);
+        Lobby lobby = lobbyService.getLobbyById(lobbyId);
+        int diceResult = result.get("total").asInt();
+        lobby.addDiceRoll(playerId, diceResult);
         return result;
     }
 
@@ -340,16 +392,19 @@ public class GameService {
             return ReportOutcome.CORRECT_REPORT_ALREADY_CAUGHT;
         }
 
-        punishCheater(reported);
+        punishPlayer(reported);
         lobby.markCheaterAsCaught(reportedId);
         return ReportOutcome.CORRECT_REPORT_NEW;
     }
 
-    private void punishCheater(Player reported) throws GameException {
+    /**
+     * Removes half of the resources of the given player
+     */
+    private void punishPlayer(Player player) throws GameException {
         List<TileType> resourceList = new ArrayList<>();
         for (TileType type : TileType.values()) {
             if (type == TileType.WASTE) continue;
-            int count = reported.getResourceCount(type);
+            int count = player.getResourceCount(type);
             for (int i = 0; i < count; i++) {
                 resourceList.add(type);
             }
@@ -358,7 +413,7 @@ public class GameService {
         int toLose = resourceList.size() / 2;
         Collections.shuffle(resourceList);
         for (int i = 0; i < toLose; i++) {
-            reported.removeResource(resourceList.get(i), 1);
+            player.removeResource(resourceList.get(i), 1);
         }
     }
 

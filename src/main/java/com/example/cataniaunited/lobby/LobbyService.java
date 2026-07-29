@@ -100,6 +100,8 @@ public interface LobbyService {
 
     void updateLatestDiceRoll(String lobbyId, String playerId) throws GameException;
 
+    void checkPlayerCanPlaceRobber(String lobbyId, String playerId) throws GameException;
+
     /**
      * Gets the color assigned to a specific player in a given lobby.
      *

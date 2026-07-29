@@ -1,6 +1,7 @@
 package com.example.cataniaunited.lobby;
 
 import com.example.cataniaunited.exception.GameException;
+import com.example.cataniaunited.game.dice.DiceRoll;
 import com.example.cataniaunited.player.PlayerColor;
 import org.jboss.logging.Logger;
 
@@ -26,6 +27,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class Lobby {
 
     private static final Logger logger = Logger.getLogger(Lobby.class);
+    private static final int ROBBER_DICE_RESULT = 7;
 
     private final String lobbyId;
     private final Instant createdAt;
@@ -45,7 +47,8 @@ public class Lobby {
     private final Map<String, Integer> reportCounts = new HashMap<>();
     private final List<ReportRecord> reportRecords = new ArrayList<>();
     private final Set<String> activeCheaters = new HashSet<>();
-
+    private final List<DiceRoll> diceHistory = new CopyOnWriteArrayList<>();
+    private volatile boolean robberPlaced = false;
 
     /**
      * Constructs a new Lobby instance.
@@ -324,6 +327,9 @@ public class Lobby {
         }
 
         activePlayer = playerOrder.get(nextIdx);
+
+        //Reset the robber placed flag, so that the next player can place the robber again
+        setRobberPlaced(false);
     }
 
     /**
@@ -339,6 +345,7 @@ public class Lobby {
         this.readyState.clear();
         this.leaderboard.clear();
         this.roundsPlayed = 0;
+        this.robberPlaced = false;
     }
 
     public int getRoundsPlayed() {
@@ -431,5 +438,29 @@ public class Lobby {
 
     public void resetVictoryPoints(String playerId) {
         this.leaderboard.remove(playerId);
+    }
+
+    public void addDiceRoll(String activePlayer, int diceRoll) {
+        diceHistory.add(new DiceRoll(activePlayer, diceRoll));
+    }
+
+    public DiceRoll getLastDiceRoll() {
+        return diceHistory.getLast();
+    }
+
+    public boolean canPlaceRobber(String playerId) {
+        if (!isPlayerTurn(playerId) || canRollDice(playerId) || isRobberPlaced()) {
+            return false;
+        }
+        DiceRoll lastRoll = getLastDiceRoll();
+        return Objects.equals(lastRoll.playerId(), playerId) && lastRoll.diceResult() == ROBBER_DICE_RESULT;
+    }
+
+    public boolean isRobberPlaced() {
+        return robberPlaced;
+    }
+
+    public void setRobberPlaced(boolean robberPlaced) {
+        this.robberPlaced = robberPlaced;
     }
 }

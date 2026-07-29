@@ -16,6 +16,7 @@ import com.example.cataniaunited.game.buildings.Building;
 import com.example.cataniaunited.game.buildings.City;
 import com.example.cataniaunited.game.buildings.Settlement;
 import com.example.cataniaunited.game.dice.DiceRoller;
+import com.example.cataniaunited.game.robber.Robber;
 import com.example.cataniaunited.player.Player;
 import com.example.cataniaunited.player.PlayerColor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +27,7 @@ import org.jboss.logging.Logger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Represents the Catan game board, including its tiles, building sites, and roads.
@@ -38,6 +40,7 @@ public class GameBoard {
     private String longestRoadPlayerId = null;
     private int longestRoadLength = 0;
 
+    private final Robber robber;
     final int sizeOfBoard; // Number of rings/layers of tiles from the center
     private final DiceRoller diceRoller;
     private final Map<String, Map<Placable, Class<? extends Buildable>>> playerStructures = new HashMap<>();
@@ -59,7 +62,7 @@ public class GameBoard {
         if (playerCount <= 1) {
             throw new IllegalArgumentException("Player count must be greater than 1.");
         }
-
+        robber = new Robber();
         sizeOfBoard = calculateSizeOfBoard(playerCount);
         logger.infof("Generating Board for %d players, with %d Levels...%n", playerCount, sizeOfBoard);
         long starttime = System.nanoTime();
@@ -68,7 +71,10 @@ public class GameBoard {
         generateBoard();
 
         this.diceRoller = new DiceRoller();
+
         subscribeTilesToDice();
+        robber.diceRoller = diceRoller;
+        robber.robTile(findWasteTile());
 
         long endtime = System.nanoTime();
 
@@ -79,6 +85,7 @@ public class GameBoard {
         }
 
         logger.infof("Generated Board for %d players, with %d Levels in %fs%n".formatted(playerCount, sizeOfBoard, (endtime - starttime) * 10e-10));
+
     }
 
     /**
@@ -96,6 +103,10 @@ public class GameBoard {
         };
     }
 
+    public Robber getRobber() {
+        return robber;
+    }
+
     /**
      * Generates the list of tiles for the game board using a {@link TileListDirector} and a {@link StandardTileListBuilder}.
      */
@@ -103,6 +114,15 @@ public class GameBoard {
         TileListBuilder tileBuilder = new StandardTileListBuilder();
         TileListDirector director = new TileListDirector(tileBuilder);
         tileList = director.constructStandardTileList(sizeOfBoard, SIZE_OF_HEX, true);
+
+    }
+
+    private Tile findWasteTile() {
+        return tileList.stream()
+                .filter(Objects::nonNull)
+                .filter(tile -> TileType.WASTE.equals(tile.getType()))
+                .findFirst()
+                .orElse(null);
     }
 
     /**
@@ -201,9 +221,9 @@ public class GameBoard {
     private boolean hasAdjacentRoads(Road road, Player player) {
         List<Road> currentRoadList = road.getAdjacentRoads().stream().filter(r -> r.getOwner() == player).toList();
         List<BuildingSite> buildingSites = road.getBuildingSites();
-        for(Road adjacentRoad : currentRoadList){
+        for (Road adjacentRoad : currentRoadList) {
             BuildingSite interMediateBuildingSite = adjacentRoad.getBuildingSites().stream().filter(buildingSites::contains).toList().get(0);
-            if(interMediateBuildingSite.getBuildingOwner() == null || interMediateBuildingSite.getBuildingOwner() == player){
+            if (interMediateBuildingSite.getBuildingOwner() == null || interMediateBuildingSite.getBuildingOwner() == player) {
                 return true;
             }
         }
@@ -344,6 +364,7 @@ public class GameBoard {
 
         boardNode.put("ringsOfBoard", this.sizeOfBoard);
         boardNode.put("sizeOfHex", DEFAULT_TILES_PER_PLAYER_GOAL);
+        boardNode.set("robber", robber.toJson());
 
         return boardNode;
     }
@@ -368,6 +389,7 @@ public class GameBoard {
      */
     private void subscribeTilesToDice() {
         tileList.forEach(tile -> tile.subscribeToDice(diceRoller));
+
     }
 
     /**

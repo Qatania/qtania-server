@@ -4,6 +4,7 @@ import com.example.cataniaunited.dto.MessageDTO;
 import com.example.cataniaunited.exception.GameException;
 import com.example.cataniaunited.exception.ui.DiceRollException;
 import com.example.cataniaunited.exception.ui.InvalidTurnException;
+import com.example.cataniaunited.exception.ui.RobberPlacementException;
 import com.example.cataniaunited.fi.LobbyAction;
 import com.example.cataniaunited.player.PlayerColor;
 import com.example.cataniaunited.player.PlayerService;
@@ -253,6 +254,16 @@ public class LobbyServiceImpl implements LobbyService {
         lobby.updateLatestDiceRollOfPlayer(playerId);
     }
 
+    @Override
+    public void checkPlayerCanPlaceRobber(String lobbyId, String playerId) throws GameException {
+        executeLobbyCheck(lobbyId, lobby -> {
+            checkPlayerTurn(lobby, playerId);
+            if (!lobby.canPlaceRobber(playerId)) {
+                throw new RobberPlacementException();
+            }
+        });
+    }
+
     /**
      * {@inheritDoc}
      *
@@ -314,6 +325,10 @@ public class LobbyServiceImpl implements LobbyService {
     @Override
     public String nextTurn(String lobbyId, String playerId) throws GameException {
         Lobby lobby = getLobbyById(lobbyId);
+        checkPlayerTurn(lobby, playerId);
+        if (lobby.canPlaceRobber(playerId)) {
+            throw new GameException("Please move the robber before ending your turn!");
+        }
         lobby.nextPlayerTurn();
         String activePlayerId = lobby.getActivePlayer();
         logger.debugf("Player ended turn: lobbyId=%s, previousActivePlayer=%s, nextActivePlayer=%s", lobbyId, playerId, activePlayerId);

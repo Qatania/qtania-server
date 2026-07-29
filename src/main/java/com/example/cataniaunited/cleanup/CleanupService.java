@@ -1,5 +1,6 @@
 package com.example.cataniaunited.cleanup;
 
+import java.time.temporal.ChronoUnit;
 import com.example.cataniaunited.exception.GameException;
 import com.example.cataniaunited.game.GameService;
 import com.example.cataniaunited.game.trade.TradingService;
@@ -14,7 +15,6 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
 @ApplicationScoped
 public class CleanupService {

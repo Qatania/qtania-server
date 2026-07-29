@@ -385,7 +385,8 @@ class LobbyServiceImplTest {
     void nextTurnShouldThrowExceptionIfPlayerOrderOfLobbyIsNull() throws GameException {
         String playerId = "player1";
         String lobbyId = lobbyService.createLobby(playerId);
-        Lobby lobby = spy(lobbyService.getLobbyById(lobbyId));
+        Lobby lobby = lobbyService.getLobbyById(lobbyId);
+        lobby.setActivePlayer(playerId);
         lobby.setPlayerOrder(List.of());
         GameException ge = assertThrows(GameException.class, () -> lobbyService.nextTurn(lobbyId, playerId));
         assertEquals("Executing next turn failed", ge.getMessage());
@@ -395,10 +396,10 @@ class LobbyServiceImplTest {
     void nextTurnShouldThrowExceptionIfActivePlayerOfLobbyIsNull() throws GameException {
         String playerId = "player1";
         String lobbyId = lobbyService.createLobby(playerId);
-        Lobby lobby = spy(lobbyService.getLobbyById(lobbyId));
+        Lobby lobby = lobbyService.getLobbyById(lobbyId);
         lobby.setActivePlayer(null);
         GameException ge = assertThrows(GameException.class, () -> lobbyService.nextTurn(lobbyId, playerId));
-        assertEquals("Executing next turn failed", ge.getMessage());
+        assertEquals("It is not your turn!", ge.getMessage());
     }
 
     @Test
