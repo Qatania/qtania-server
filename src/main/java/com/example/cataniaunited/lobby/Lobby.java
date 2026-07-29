@@ -453,7 +453,7 @@ public class Lobby {
             return false;
         }
         DiceRoll lastRoll = getLastDiceRoll();
-        return Objects.equals(lastRoll.playerId(), playerId) || lastRoll.diceResult() != ROBBER_DICE_RESULT;
+        return Objects.equals(lastRoll.playerId(), playerId) && lastRoll.diceResult() == ROBBER_DICE_RESULT;
     }
 
     public boolean isRobberPlaced() {
